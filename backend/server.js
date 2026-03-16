@@ -16,7 +16,7 @@ app.use(express.json());
 app.get('/api/v1/status', (req, res) => {
     res.status(200).json({
         status: 'success',
-        message: 'E-Learning API is up and running',
+        message: 'Base Learn API is up and running',
         environment: process.env.NODE_ENV,
         timestamp: new Date().toISOString()
     });

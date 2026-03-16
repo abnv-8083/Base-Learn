@@ -1,4 +1,4 @@
-# 🎓 LearnGo: Unified E-Learning Platform
+# 🎓 Base Learn: Unified E-Learning Platform
 
 LearnGo is a high-performance, scalable E-Learning system featuring four distinct portals for Students, Instructors, Faculty, and Administrators. This project is architected for maximum speed, modern aesthetics, and seamless team collaboration.
 
