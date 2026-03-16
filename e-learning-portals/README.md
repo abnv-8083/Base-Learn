@@ -24,6 +24,11 @@ This repository is pre-structured for a 3-member development team to ensure clea
 1. **Clone the repo**: `git clone <repo-url>`
 2. **Open a Portal**: Double-click any `.html` file inside the `apps/` folders to view it in your browser.
 3. **Shared Styles**: All dashboards inherit styles from `/assets/css/global.css`. Edit this file for global design changes.
+4. **Run the Backend**:
+    - `cd backend`
+    - `npm install`
+    - `npm start`
+    - Verify: `curl http://localhost:5000/api/v1/status`
 
 ## 🧑‍💻 Technical Stack
 - **Frontend**: HTML5, CSS3 (Vanilla), Phosphor Icons.
