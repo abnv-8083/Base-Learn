@@ -4,6 +4,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 // Public Pages
 import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
+import LoginPage from './pages/LoginPage';
+import UnauthorizedPage from './pages/UnauthorizedPage';
 
 // Portals & Layouts
 import ProtectedRoute from './components/ProtectedRoute';
@@ -21,7 +23,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import InstructorDashboard from './pages/instructor/InstructorDashboard';
 import FacultyDashboard from './pages/faculty/FacultyDashboard';
 
-// We'll create these scaffold pages shortly:
+// Scaffold placeholder for unbuilt pages
 const PlaceholderPage = ({ title }) => (
   <div className="flex items-center justify-center h-full p-8 text-center bg-white rounded-lg shadow-sm border">
     <div>
@@ -35,22 +37,29 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Public Routes */}
+        {/* ── Public Routes ───────────────────────────────── */}
         <Route path="/" element={<LandingPage />} />
-        
-        {/* Auth Routes */}
+        <Route path="/unauthorized" element={<UnauthorizedPage />} />
+
+        {/* ── Auth Routes ─────────────────────────────────── */}
+        {/* Student auth (standalone page) */}
         <Route path="/student/login" element={<AuthPage />} />
         <Route path="/student/register" element={<AuthPage />} />
 
-        {/* Protected Student Portal Routes */}
+        {/* Unified login for admin / instructor / faculty */}
+        {/* Usage: /login?role=admin  /login?role=instructor  /login?role=faculty */}
+        <Route path="/login" element={<LoginPage />} />
+
+        {/* ── Protected: Onboarding (students only) ───────── */}
         <Route path="/student/onboarding" element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['student']}>
             <OnboardingFlow />
           </ProtectedRoute>
         } />
-        
+
+        {/* ── Protected: Student Portal (nested layout) ────── */}
         <Route path="/student" element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['student']}>
             <StudentLayout />
           </ProtectedRoute>
         }>
@@ -61,16 +70,30 @@ function App() {
           <Route path="progress" element={<PlaceholderPage title="My Progress" />} />
           <Route path="schedule" element={<PlaceholderPage title="Schedule" />} />
           <Route path="messages" element={<PlaceholderPage title="Messages" />} />
-          {/* Will add more nested routes here as we build them */}
         </Route>
 
-        {/* Other Portals (Currently Unprotected for Demo Purposes) */}
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/instructor" element={<InstructorDashboard />} />
-        <Route path="/faculty" element={<FacultyDashboard />} />
-        
-        
-        {/* Catch-all */}
+        {/* ── Protected: Admin Portal ─────────────────────── */}
+        <Route path="/admin" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
+
+        {/* ── Protected: Instructor Portal ─────────────────── */}
+        <Route path="/instructor" element={
+          <ProtectedRoute allowedRoles={['instructor']}>
+            <InstructorDashboard />
+          </ProtectedRoute>
+        } />
+
+        {/* ── Protected: Faculty Portal ─────────────────────── */}
+        <Route path="/faculty" element={
+          <ProtectedRoute allowedRoles={['faculty']}>
+            <FacultyDashboard />
+          </ProtectedRoute>
+        } />
+
+        {/* ── Catch-all ─────────────────────────────────────── */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

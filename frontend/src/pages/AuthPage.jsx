@@ -26,6 +26,10 @@ const AuthPage = () => {
 
     const handleAuthSuccess = (data) => {
         if (data.success && data.data && data.data.token) {
+            // Store with unified keys for RBAC-aware ProtectedRoute
+            localStorage.setItem('authToken', data.data.token);
+            localStorage.setItem('authUser', JSON.stringify(data.data.user));
+            // Legacy keys for backward compat (StudentLayout reads studentUser)
             localStorage.setItem('studentToken', data.data.token);
             localStorage.setItem('studentUser', JSON.stringify(data.data.user));
             navigate('/student');

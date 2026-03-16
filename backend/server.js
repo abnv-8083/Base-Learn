@@ -19,40 +19,9 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/v1', mainRoutes);
 
-// --- FRONTEND STATIC SERVING ---
-const rootDir = path.join(__dirname, '../');
-
-// Serve static assets natively
-app.use('/assets', express.static(path.join(rootDir, 'assets')));
-app.use('/apps', express.static(path.join(rootDir, 'apps')));
-app.use('/docs', express.static(path.join(rootDir, 'docs')));
-
-// Landing Page
-app.get('/', (req, res) => {
-    res.sendFile(path.join(rootDir, 'index.html'));
-});
-
-// Student Portal Routes
-app.get('/student', (req, res) => {
-    res.sendFile(path.join(rootDir, 'apps/student/student-portal.html'));
-});
-app.get('/student/login', (req, res) => {
-    res.sendFile(path.join(rootDir, 'apps/student/auth.html'));
-});
-app.get('/student/register', (req, res) => {
-    res.sendFile(path.join(rootDir, 'apps/student/auth.html'));
-});
-
-// Other Portal Entry Points
-app.get('/instructor', (req, res) => {
-    res.sendFile(path.join(rootDir, 'apps/instructor/instructor-portal.html'));
-});
-app.get('/faculty', (req, res) => {
-    res.sendFile(path.join(rootDir, 'apps/faculty/faculty-portal.html'));
-});
-app.get('/admin', (req, res) => {
-    res.sendFile(path.join(rootDir, 'apps/admin/admin-portal.html'));
-});
+// --- NOTE ---
+// The frontend is served by the separate Vite dev server (port 5173).
+// This Express server handles only API routes at /api/v1/*.
 
 // 404 Handler
 app.use((req, res, next) => {
