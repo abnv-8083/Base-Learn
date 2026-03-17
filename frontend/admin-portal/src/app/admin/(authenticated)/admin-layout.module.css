@@ -1,0 +1,105 @@
+.adminContainer {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--color-bg-soft);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Add a subtle background decoration for the premium look */
+.adminContainer::before {
+  content: '';
+  position: fixed;
+  top: -20%;
+  left: -10%;
+  width: 50%;
+  height: 50%;
+  background: radial-gradient(circle, var(--color-primary-light) 0%, transparent 70%);
+  opacity: 0.6;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.adminContainer::after {
+  content: '';
+  position: fixed;
+  bottom: -20%;
+  right: -10%;
+  width: 50%;
+  height: 50%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, transparent 70%); /* subtle green hint */
+  opacity: 0.8;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.sidebarWrapper {
+  width: 280px;
+  flex-shrink: 0;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  /* Sidebar handles its own glassmorphism in its module */
+}
+
+.mainContentWrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: rgba(248, 250, 252, 0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+.greeting {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.userProfile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.avatar {
+  background: var(--color-primary);
+  color: var(--color-bg-white);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-family: var(--font-display);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+.avatar:hover {
+  transform: scale(1.05);
+}
+
+.contentArea {
+  padding: 2.5rem;
+  flex: 1;
+}
