@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Button } from "@repo/ui/components/button";
 import { Card } from "@repo/ui/components/card";
-import { Badge } from "@repo/ui/components/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@repo/ui/components/tabs";
 import { cn } from "@repo/ui/lib/utils";
 import { 
@@ -22,11 +21,12 @@ import {
   Info,
   PenLine,
   ArrowLeft,
-  Settings,
-  Share2
+  Share2,
+  Bookmark,
+  ChevronRight
 } from "lucide-react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const chapters = [
   {
@@ -51,234 +51,225 @@ export default function CourseDetail({ params }: { params: { courseId: string } 
   const [activeTab, setActiveTab] = useState("overview");
 
   return (
-    <div className="p-6 md:p-10 space-y-10">
-      {/* Header & Navigation */}
-      <div className="flex flex-col gap-6">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      
+      {/* Header Area */}
+      <section className="space-y-6">
         <Link 
           href="/courses" 
-          className="group flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-primary transition-all w-fit"
+          className="group flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-text-muted hover:text-primary transition-all w-fit"
         >
-          <div className="w-8 h-8 rounded-xl bg-white border border-slate-100 flex items-center justify-center group-hover:bg-primary/5 group-hover:border-primary/20 transition-all shadow-sm">
-            <ArrowLeft className="w-4 h-4" />
-          </div>
-          Back to My Journey
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          Back to My Roadmap
         </Link>
 
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-10">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
           <div className="space-y-4">
-             <div className="flex items-center gap-3">
-                <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter">Polynomials Mastery</h1>
-                <span className="badge !bg-primary/10 !text-primary border-primary/20">GRADE 9</span>
-             </div>
-             <div className="flex items-center gap-6">
-                <div className="flex items-center gap-3">
-                   <div className="w-10 h-10 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center font-black text-primary text-xs shadow-sm">
-                      SS
-                   </div>
-                   <div>
-                      <div className="text-xs font-black text-slate-900 leading-none mb-1">Dr. Sarah Smith</div>
-                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Senior Mentor</div>
-                   </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="badge !bg-primary-light !text-primary border-primary/10">MATHEMATICS</span>
+              <span className="badge !bg-amber-500/10 !text-amber-600 border-amber-500/20">GRADE 9</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-display font-bold text-text-main tracking-tight">Polynomials & Identities</h1>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-bg-soft border border-border-main flex items-center justify-center font-bold text-primary text-xs">
+                  SS
                 </div>
-                <div className="h-4 w-px bg-slate-200" />
-                <div className="flex items-center gap-2 text-slate-500 font-bold text-xs">
-                   <Clock className="w-4 h-4 text-primary" />
-                   12 Lessons • 8h 45m total
+                <div>
+                  <div className="text-sm font-bold text-text-main leading-none mb-1">Dr. Sarah Smith</div>
+                  <div className="text-[10px] font-bold text-text-muted uppercase tracking-widest leading-none">Instructor</div>
                 </div>
-             </div>
+              </div>
+              <div className="h-4 w-px bg-border-main" />
+              <div className="flex items-center gap-2 text-text-muted font-bold text-xs uppercase tracking-widest">
+                <Clock className="w-4 h-4 text-primary" />
+                150 Students
+              </div>
+            </div>
           </div>
           
-          <div className="bg-white border border-slate-100 p-8 rounded-[2.5rem] shadow-xl shadow-primary-glow/5 min-w-[320px]">
-             <div className="flex justify-between items-center mb-4">
-                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Mastery Level</span>
-                <span className="text-[10px] font-black text-primary uppercase tracking-widest bg-primary/10 px-3 py-1.5 rounded-full">58% COMPLETED</span>
-             </div>
-             <div className="h-2.5 w-full bg-slate-50 border border-slate-100 rounded-full overflow-hidden">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: "58%" }}
-                  className="h-full primary-gradient shadow-lg" 
-                />
-             </div>
+          <div className="bg-white border border-border-main p-6 rounded-2xl shadow-sm min-w-[300px]">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-[10px] font-bold uppercase text-text-muted tracking-widest">Your Progress</span>
+              <span className="text-[10px] font-bold text-primary tracking-widest bg-primary-light px-2 py-1 rounded-md">58% COMPLETE</span>
+            </div>
+            <div className="h-1.5 w-full bg-bg-soft rounded-full overflow-hidden border border-border-main">
+              <div className="h-full bg-primary shadow-sm" style={{ width: "58%" }} />
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        {/* Left Content */}
-        <div className="lg:col-span-8 space-y-10">
-          {/* Enhanced Video Player */}
-          <section className="relative aspect-video rounded-[3rem] bg-slate-900 overflow-hidden shadow-2xl shadow-primary-glow/20 group cursor-pointer">
-             <img 
-                src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=2000&auto=format&fit=crop" 
-                className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-1000"
-                alt="Video Background"
-             />
-             
-             {/* Center Play Button */}
-             <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-2xl hover:scale-110 transition-transform duration-500 group">
-                   <Play className="w-10 h-10 text-white fill-current ml-1 group-hover:scale-110 transition-transform" />
-                </div>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        {/* Left: Video & Tabs */}
+        <div className="lg:col-span-8 space-y-8">
+          
+          {/* Video Player */}
+          <div className="relative aspect-video rounded-3xl bg-text-main overflow-hidden shadow-2xl group cursor-pointer border border-border-main">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
+            <div className="absolute inset-0 flex items-center justify-center z-20">
+               <motion.div 
+                 whileHover={{ scale: 1.1 }}
+                 whileActive={{ scale: 0.95 }}
+                 className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-2xl"
+               >
+                  <Play className="w-8 h-8 text-white fill-white ml-1" />
+               </motion.div>
+            </div>
+            
+            {/* Player UI */}
+            <div className="absolute bottom-0 inset-x-0 p-6 z-20 space-y-4 translate-y-2 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
+              <div className="h-1.5 w-full bg-white/20 rounded-full overflow-hidden relative">
+                 <div className="absolute inset-y-0 left-0 w-[42%] bg-primary" />
+                 <div className="absolute top-1/2 left-[42%] -translate-y-1/2 w-3.5 h-3.5 bg-primary rounded-full border-2 border-white shadow-lg" />
+              </div>
+              <div className="flex items-center justify-between">
+                 <div className="flex items-center gap-6">
+                    <button className="text-white hover:text-primary transition-colors"><SkipBack size={20} /></button>
+                    <button className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-primary shadow-xl hover:scale-105 active:scale-95 transition-all">
+                       <Play size={18} fill="currentColor" />
+                    </button>
+                    <button className="text-white hover:text-primary transition-colors"><SkipForward size={20} /></button>
+                    <div className="flex items-center gap-3 ml-4">
+                       <Volume2 size={18} className="text-white/80" />
+                       <div className="w-20 h-1 bg-white/20 rounded-full overflow-hidden">
+                          <div className="h-full w-2/3 bg-white" />
+                       </div>
+                    </div>
+                    <span className="text-[10px] font-bold text-white uppercase tracking-widest ml-4">08:24 / 18:20</span>
+                 </div>
+                 <div className="flex items-center gap-4">
+                    <button className="text-[10px] font-bold text-white uppercase tracking-widest bg-white/10 px-3 py-1.5 rounded-lg border border-white/20 hover:bg-white hover:text-text-main transition-all">
+                       1.5x Speed
+                    </button>
+                    <button className="text-white hover:text-primary transition-colors"><Maximize size={20} /></button>
+                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Row */}
+          <div className="flex items-center justify-between">
+             <div className="flex gap-2">
+                <Button size="sm" variant="ghost" className="rounded-btn h-10 px-4 font-bold border border-border-main bg-white text-text-muted hover:text-primary">
+                   <PenLine className="w-4 h-4 mr-2" /> Take a Note
+                </Button>
+                <Button size="sm" variant="ghost" className="rounded-btn h-10 px-4 font-bold border border-border-main bg-white text-text-muted hover:text-primary">
+                   <Bookmark className="w-4 h-4 mr-2" /> Bookmark
+                </Button>
              </div>
+             <Button variant="ghost" className="text-primary font-bold flex items-center gap-1 group">
+                Mark as Complete <CheckCircle2 className="w-4 h-4" />
+             </Button>
+          </div>
 
-             {/* Dynamic Video Controls */}
-             <div className="absolute inset-x-6 bottom-6 bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-8 pb-6 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-4 group-hover:translate-y-0">
-                <div className="space-y-6">
-                   <div className="h-1.5 w-full bg-white/20 rounded-full overflow-hidden relative group/progress">
-                      <div className="absolute inset-y-0 left-0 w-[45%] bg-primary shadow-lg shadow-primary-glow" />
-                      <div className="absolute top-1/2 left-[45%] -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-2xl scale-0 group-hover/progress:scale-100 transition-transform" />
-                   </div>
-                   
-                   <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-8">
-                         <div className="flex items-center gap-6">
-                            <SkipBack className="w-5 h-5 text-white/70 hover:text-white transition-colors" />
-                            <button className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center hover:bg-white/90 transition-all shadow-xl active:scale-95">
-                               <Play className="w-5 h-5 text-primary fill-current ml-1" />
-                            </button>
-                            <SkipForward className="w-5 h-5 text-white/70 hover:text-white transition-colors" />
-                         </div>
-                         <div className="flex items-center gap-4">
-                            <Volume2 className="w-5 h-5 text-white/70" />
-                            <div className="w-24 h-1.5 bg-white/20 rounded-full">
-                               <div className="h-full w-2/3 bg-white" />
-                            </div>
-                         </div>
-                         <div className="text-[10px] font-black text-white uppercase tracking-widest opacity-70">
-                            08:24 / 18:20
-                         </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-6">
-                         <button className="text-[10px] font-black text-white uppercase tracking-widest bg-white/10 px-4 py-2 rounded-xl border border-white/10 hover:bg-white hover:text-primary transition-all">
-                            1.0X Speed
-                         </button>
-                         <Maximize className="w-5 h-5 text-white/70 hover:text-white transition-colors" />
-                      </div>
-                   </div>
-                </div>
-             </div>
-          </section>
-
-          {/* Tabbed Navigation */}
+          {/* Tabs */}
           <Tabs defaultValue="overview" className="w-full">
-             <TabsList className="bg-white border border-slate-100 p-2 rounded-[2rem] w-fit shadow-sm">
-                <TabsTrigger value="overview" className="rounded-2xl px-10 py-3 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white shadow-none data-[state=active]:shadow-xl data-[state=active]:shadow-primary-glow border-none transition-all">
-                   <Info className="w-4 h-4 mr-2" />
-                   Overview
-                </TabsTrigger>
-                <TabsTrigger value="notes" className="rounded-2xl px-10 py-3 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white shadow-none data-[state=active]:shadow-xl data-[state=active]:shadow-primary-glow border-none transition-all">
-                   <PenLine className="w-4 h-4 mr-2" />
-                   Notes
-                </TabsTrigger>
-                <TabsTrigger value="discussions" className="rounded-2xl px-10 py-3 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white shadow-none data-[state=active]:shadow-xl data-[state=active]:shadow-primary-glow border-none transition-all">
-                   <MessageSquare className="w-4 h-4 mr-2" />
-                   Community
-                </TabsTrigger>
-             </TabsList>
-             
-             <TabsContent value="overview" className="pt-10">
-                <Card className="soft-card p-10 relative overflow-hidden border-2 border-primary/5">
-                   <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-[80px]" />
-                   <div className="relative z-10 space-y-8">
-                     <div className="space-y-4">
-                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">About this lesson</h2>
-                        <p className="text-slate-500 leading-relaxed font-bold text-lg opacity-70">
-                           In this chapter, we will dive deep into the world of Polynomials. Starting from the basic definitions, we will cover degrees, types of polynomials, and move towards advanced concepts like the remainder theorem and factor theorem.
-                        </p>
-                     </div>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                        <div className="space-y-6">
-                           <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Learning Outcomes</h3>
-                           <ul className="space-y-4">
-                              {["Understand Degree of Polynomials", "Zeroes and Geometric meaning", "Division Algorithm for Classes"].map((item, i) => (
-                                 <li key={i} className="flex items-center gap-4 text-sm text-slate-600 font-bold">
-                                    <div className="w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
-                                       <CheckCircle2 className="w-4 h-4" />
-                                    </div>
-                                    {item}
-                                 </li>
-                              ))}
-                           </ul>
-                        </div>
-                     </div>
-                   </div>
-                </Card>
-             </TabsContent>
+            <TabsList className="bg-bg-soft border border-border-main p-1.5 rounded-2xl w-fit">
+              <TabsTrigger value="overview" className="rounded-xl px-8 py-3 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="notes" className="rounded-xl px-8 py-3 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">
+                My Notes
+              </TabsTrigger>
+              <TabsTrigger value="community" className="rounded-xl px-8 py-3 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">
+                Discuss
+              </TabsTrigger>
+              <TabsTrigger value="resources" className="rounded-xl px-8 py-3 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">
+                 Resources
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="overview" className="mt-8">
+              <Card className="soft-card p-8 border-none space-y-8">
+                <div className="space-y-4">
+                  <h3 className="text-2xl font-display font-bold text-text-main">Chapter Description</h3>
+                  <p className="text-text-muted leading-relaxed">
+                    In this lesson, we explore the fundamental definition of polynomials, including their classification by degree and terms. We will cover linear, quadratic, and cubic polynomials with practical exam-focused examples.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-bold text-primary uppercase tracking-widest">Learning Outcomes</h4>
+                    <ul className="space-y-3">
+                      {["Identify types of polynomials", "Calculate degree of terms", "Understand geometric representation"].map((outcome, i) => (
+                        <li key={i} className="flex items-center gap-3 text-sm font-medium text-text-main">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                          {outcome}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </Card>
+            </TabsContent>
 
-             <TabsContent value="notes" className="pt-10">
-                <Card className="soft-card p-10 bg-white">
-                   <div className="flex items-center justify-between mb-10">
-                      <h2 className="text-2xl font-black text-slate-900 tracking-tight">Lesson Notes</h2>
-                      <Button className="rounded-2xl bg-primary hover:opacity-90 text-white font-black h-12 shadow-xl shadow-primary-glow active:scale-95 transition-all text-[10px] uppercase tracking-widest px-8">
-                         Add New Note
-                      </Button>
-                   </div>
-                   <div className="space-y-6">
-                      <div className="p-8 bg-slate-50 border border-slate-100 rounded-3xl group cursor-pointer hover:border-primary/20 transition-all">
-                         <div className="flex items-center justify-between mb-4">
-                            <span className="badge !bg-primary/10 !text-primary border-primary/20 !px-4 !py-2 uppercase font-black text-[10px]">Timestamp • 04:12</span>
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">2 hours ago</span>
-                         </div>
-                         <p className="text-slate-900 font-bold text-lg leading-relaxed">Important: The degree of a constant polynomial is zero.</p>
-                      </div>
-                   </div>
-                </Card>
-             </TabsContent>
+            <TabsContent value="notes" className="mt-8">
+               <Card className="soft-card p-8 border-none flex flex-col items-center justify-center text-center py-20 space-y-4">
+                  <div className="w-16 h-16 bg-bg-soft rounded-2xl flex items-center justify-center border border-border-main">
+                     <PenLine className="w-8 h-8 text-text-muted" />
+                  </div>
+                  <h3 className="text-lg font-bold text-text-main">No notes yet</h3>
+                  <p className="text-text-muted text-sm max-w-xs">Take time-stamped notes while watching the video to review later.</p>
+                  <Button className="bg-primary text-white font-bold rounded-xl h-11 px-6 shadow-ocean">
+                     Start Writing
+                  </Button>
+               </Card>
+            </TabsContent>
           </Tabs>
         </div>
 
-        {/* Right Content */}
-        <div className="lg:col-span-4 space-y-10">
-           <Card className="soft-card p-8 border-2 border-primary/5">
+        {/* Right: Chapter List */}
+        <div className="lg:col-span-4 space-y-6">
+           <Card className="soft-card p-6 border-none">
               <div className="flex items-center justify-between mb-8">
-                 <h2 className="text-xl font-black text-slate-900 tracking-tight">Curriculum</h2>
-                 <span className="badge !bg-slate-50 !text-slate-400 !px-3 font-black">12 Lessons</span>
+                 <h3 className="font-display font-bold text-text-main">Chapter Roadmap</h3>
+                 <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest px-2 py-1 bg-bg-soft rounded-md">8 Lessons</span>
               </div>
 
-              <div className="space-y-8">
+              <div className="space-y-6">
                  {chapters.map((chapter, i) => (
-                    <div key={i} className="space-y-6">
-                       <div className="flex items-center justify-between group cursor-pointer border-b border-slate-50 pb-2">
-                          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] group-hover:text-primary transition-colors">{chapter.title}</h3>
-                          <ChevronDown className="w-4 h-4 text-slate-300 group-hover:text-primary" />
+                    <div key={i} className="space-y-4">
+                       <div className="flex items-center justify-between border-b border-border-soft pb-2">
+                          <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">{chapter.title}</span>
+                          <ChevronDown className="w-4 h-4 text-text-muted" />
                        </div>
-                       <div className="space-y-3">
+                       <div className="space-y-2">
                           {chapter.lessons.map((lesson) => (
                              <div 
                                key={lesson.id} 
                                className={cn(
-                                 "flex items-center gap-4 p-4 rounded-2xl border-2 transition-all cursor-pointer group/lesson",
+                                 "flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer group",
                                  lesson.status === "current" 
-                                   ? "bg-primary border-primary shadow-xl shadow-primary-glow/20" 
-                                   : "bg-white border-slate-50 hover:bg-slate-50 hover:border-slate-100 shadow-sm"
+                                   ? "bg-primary border-primary shadow-lg shadow-primary/10" 
+                                   : "bg-white border-border-soft hover:bg-bg-soft hover:border-border-main"
                                )}
                              >
                                 <div className={cn(
-                                   "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm",
-                                   lesson.status === "completed" ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
-                                   lesson.status === "current" ? "bg-white/20 text-white border border-white/30" : "bg-slate-50 text-slate-300 border border-slate-100 group-hover/lesson:text-primary transition-colors"
+                                   "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                                   lesson.status === "completed" ? "bg-emerald-50 text-emerald-500" :
+                                   lesson.status === "current" ? "bg-white/20 text-white" : "bg-bg-soft text-text-muted"
                                 )}>
-                                   {lesson.status === "completed" ? <CheckCircle2 className="w-5 h-5" /> : 
-                                    lesson.status === "locked" ? <Lock className="w-4 h-4" /> : 
-                                    <Play className="w-5 h-5 fill-current ml-1" />}
+                                   {lesson.status === "completed" ? <CheckCircle2 size={16} /> : 
+                                    lesson.status === "locked" ? <Lock size={14} /> : 
+                                    <Play size={16} fill={lesson.status === "current" ? "white" : "none"} />}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                    <div className={cn(
-                                      "text-sm font-black leading-tight mb-1 truncate tracking-tight",
-                                      lesson.status === "current" ? "text-white" : "text-slate-900"
+                                      "text-xs font-bold leading-tight mb-0.5 truncate",
+                                      lesson.status === "current" ? "text-white" : "text-text-main"
                                    )}>
-                                      {lesson.id}. {lesson.title}
+                                      {lesson.title}
                                    </div>
                                    <div className={cn(
-                                      "flex items-center gap-2 text-[10px] font-black uppercase tracking-widest",
-                                      lesson.status === "current" ? "text-white/60" : "text-slate-400"
+                                      "text-[9px] font-bold uppercase tracking-widest flex items-center gap-1",
+                                      lesson.status === "current" ? "text-white/60" : "text-text-muted"
                                    )}>
-                                      <Clock className="w-3 h-3" />
-                                      {lesson.duration}
+                                      <Clock size={10} /> {lesson.duration}
                                    </div>
-                                 </div>
+                                </div>
                              </div>
                           ))}
                        </div>
@@ -286,14 +277,16 @@ export default function CourseDetail({ params }: { params: { courseId: string } 
                  ))}
               </div>
 
-              <div className="space-y-4 mt-12 pt-8 border-t border-slate-50">
-                 <Button className="w-full h-14 rounded-2xl bg-white border border-slate-100 text-slate-400 hover:text-primary hover:border-primary/20 font-black uppercase tracking-widest text-[10px] space-x-3 shadow-sm transition-all group">
-                    <FileText className="w-5 h-5 text-slate-300 group-hover:text-primary transition-colors" />
-                    <span>Resource Bundle.zip</span>
+              <div className="mt-10 pt-8 border-t border-border-soft space-y-3">
+                 <Button variant="ghost" className="w-full justify-between h-12 bg-bg-soft text-text-main font-bold text-xs rounded-xl border border-border-soft hover:bg-white hover:border-primary transition-all px-4">
+                    <div className="flex items-center gap-2">
+                       <FileText size={18} className="text-primary" />
+                       Formula Sheet.pdf
+                    </div>
+                    <ChevronRight size={16} className="text-text-muted" />
                  </Button>
-                 <Button className="w-full h-14 rounded-2xl bg-slate-900 text-white font-black uppercase tracking-widest text-[10px] space-x-3 shadow-xl active:scale-95 transition-all">
-                    <Share2 className="w-5 h-5" />
-                    <span>Invite Study Buddy</span>
+                 <Button className="w-full h-12 bg-text-main text-white font-bold text-xs rounded-xl shadow-lg active:scale-95 transition-all">
+                    Share Course
                  </Button>
               </div>
            </Card>

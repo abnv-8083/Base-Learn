@@ -1,284 +1,236 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
-import { Button } from "@repo/ui/components/button";
-import { Card } from "@repo/ui/components/card";
+import { motion } from "framer-motion";
 import { 
-  GraduationCap, 
-  BookOpen, 
+  Zap, 
+  Flame, 
+  Play, 
+  Target, 
+  Calendar, 
   Trophy, 
   Clock, 
-  Flame, 
-  PlayCircle,
+  CheckCircle2, 
+  Bell, 
   TrendingUp,
+  MoreVertical,
   ChevronRight,
-  Target,
-  Zap,
-  Calendar,
-  Star
+  BookOpen
 } from "lucide-react";
-import { motion } from "framer-motion";
-import { cn } from "@repo/ui/lib/utils";
+import { Card } from "@repo/ui/components/card";
+import { Button } from "@repo/ui/components/button";
+import { Badge } from "@repo/ui/components/badge";
 
-export default function Dashboard() {
-  const { user } = useUser();
+const stats = [
+  { label: "Classes Watched", value: "12/15", sub: "This Week", icon: Play, color: "text-blue-500", bg: "bg-blue-50" },
+  { label: "Avg. Test Score", value: "84%", sub: "+5% from last month", icon: Target, color: "text-indigo-500", bg: "bg-indigo-50" },
+  { label: "Current Rank", value: "#7", sub: "Top 5% of Class", icon: Trophy, color: "text-amber-500", bg: "bg-amber-50" },
+];
 
-  const stats = [
-    { label: "Classes Watched", value: "12/15", sub: "This Week", icon: Clock, color: "text-primary", bg: "bg-primary-light" },
-    { label: "Assignment Score", value: "84%", sub: "Average", icon: Target, color: "text-indigo-600", bg: "bg-indigo-50" },
-    { label: "Current Rank", value: "#7", sub: "In Your Class", icon: Trophy, color: "text-sky-600", bg: "bg-sky-50" },
-  ];
+const continueLearning = [
+  { title: "Mathematics — Chapter 5: Polynomials", instructor: "Dr. Sarah Smith", progress: 58, lastChapter: "Video 7: Long Division" },
+  { title: "Physics — Chapter 3: Laws of Motion", instructor: "Prof. James Wilson", progress: 85, lastChapter: "Video 12: Friction" },
+];
 
+const activity = [
+  { text: "You completed Chapter 3 - Quadratic Equations", time: "2 hours ago", type: "course" },
+  { text: "Test Score: 78/100 in Chemistry", time: "Yesterday", type: "test" },
+  { text: "Assignment submitted: History Essay", time: "2 days ago", type: "assignment" },
+];
+
+export default function DashboardPage() {
   return (
-    <div className="space-y-10 animate-in fade-in duration-500">
-      {/* Welcome Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 py-2">
-        <motion.div
-           initial={{ opacity: 0, x: -20 }}
-           animate={{ opacity: 1, x: 0 }}
-        >
-          <div className="badge mb-4">
-             <Star className="w-3.5 h-3.5 mr-2 fill-primary" />
-             Student Dashboard
-          </div>
-          <h1 className="text-display mb-1">
-            Good Morning, <span className="text-gradient">{user?.firstName || "Student"}</span> 👋
-          </h1>
-          <p className="text-text-muted font-medium flex items-center gap-2">
-             <Calendar className="w-4 h-4" />
-             March 16, 2026 — Weekly Progress
-          </p>
-        </motion.div>
+    <div className="space-y-10">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
         
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex items-center gap-4"
-        >
-           <div className="px-6 py-4 rounded-card bg-white border border-border-main flex items-center gap-4 shadow-ocean group cursor-pointer hover:border-primary transition-all">
-              <div className="w-12 h-12 rounded-lg bg-orange-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                 <Flame className="w-6 h-6 text-orange-500 fill-orange-500" />
-              </div>
+        {/* Main Content Area */}
+        <div className="xl:col-span-2 space-y-10">
+          
+          {/* Welcome Header */}
+          <section className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                 <div className="text-xl font-bold text-foreground leading-none">5 Days</div>
-                 <div className="text-xs font-bold text-orange-500 uppercase tracking-wider mt-1">Current Streak</div>
+                <h1 className="text-4xl font-display font-bold text-text-main mb-1">Good Morning, Arjun 👋</h1>
+                <p className="text-text-muted font-medium">Tuesday, March 17, 2026</p>
               </div>
-           </div>
-           
-           <Button className="h-14 px-8 rounded-btn bg-primary text-white font-bold hover:bg-primary-dark transition-all shadow-md active:scale-95">
-              Resume Last Class
-              <PlayCircle className="ml-3 w-5 h-5 fill-white/20" />
-           </Button>
-        </motion.div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-         {stats.map((stat, i) => (
-           <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-           >
-             <Card className="soft-card p-1">
-                <div className="p-8">
-                   <div className="flex items-center justify-between mb-8">
-                      <div className={`w-14 h-14 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center`}>
-                         <stat.icon className="w-7 h-7" />
-                      </div>
-                      <div className="text-[10px] font-bold text-text-muted uppercase tracking-widest bg-bg-soft px-3 py-1.5 rounded-full border border-border-main">
-                         +12% Trend
-                      </div>
-                   </div>
-                   <div className="text-4xl font-bold text-foreground mb-1 tracking-tight">{stat.value}</div>
-                   <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-text-muted uppercase tracking-wider leading-none">{stat.label}</span>
-                      <div className="w-1 h-1 rounded-full bg-border-main" />
-                      <span className="text-xs font-bold text-primary uppercase tracking-wider leading-none">{stat.sub}</span>
-                   </div>
+              <div className="flex items-center gap-3 bg-white border border-border-soft p-2 rounded-2xl shadow-sm">
+                <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
+                  <Flame className="text-orange-500 w-6 h-6 fill-orange-500" />
                 </div>
-                <div className="h-1.5 w-full bg-bg-soft relative overflow-hidden rounded-b-card">
-                   <div className={`absolute left-0 top-0 h-full ${stat.color.replace('text', 'bg')} opacity-20 w-[70%]`} />
+                <div className="pr-4">
+                  <div className="text-xs font-bold text-text-muted uppercase tracking-widest">Current Streak</div>
+                  <div className="text-lg font-bold text-text-main">5-Day Streak</div>
                 </div>
-             </Card>
-           </motion.div>
-         ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        {/* Main Feed */}
-        <div className="lg:col-span-8 space-y-10">
-          {/* Continue Learning */}
-          <section>
-            <div className="flex items-center justify-between mb-8 px-2">
-               <h2 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/10">
-                    <Zap className="w-5 h-5 text-white fill-white" />
-                  </div>
-                  Ready to Continue?
-               </h2>
-               <button className="text-[11px] font-bold text-primary uppercase tracking-widest hover:translate-x-1 transition-transform border-b-2 border-primary-light pb-1">
-                  Browse Catalog
-               </button>
+              </div>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-               {[
-                 { subject: "Mathematics", title: "Chapter 5: Quadratic Equations", progress: 72, color: "bg-primary" },
-                 { subject: "Physics", title: "Chapter 3: Work & Energy", progress: 45, color: "bg-indigo-600" }
-               ].map((course, i) => (
-                 <Card key={i} className="soft-card group p-2 relative overflow-hidden">
-                    <div className="relative aspect-[16/10] rounded-lg bg-bg-soft mb-6 overflow-hidden">
-                       <img 
-                          src={`https://images.unsplash.com/photo-${i === 0 ? '1635070041078-e363dbe005cb' : '1635070040896-73604f762635'}?q=80&w=1000&auto=format&fit=crop`}
-                          className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
-                          alt={course.title}
-                       />
-                       <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 to-transparent" />
-                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-2xl scale-90 group-hover:scale-100 transition-transform duration-500">
-                            <PlayCircle className="w-8 h-8 text-primary fill-primary/10" />
-                          </div>
-                       </div>
-                       <div className="absolute top-4 left-4">
-                          <span className="badge !bg-white/20 !text-white backdrop-blur-md border border-white/30 text-[10px]">
-                             {course.subject}
-                          </span>
-                       </div>
-                    </div>
-                    <div className="px-5 pb-5">
-                       <h3 className="font-bold text-lg text-foreground mb-6 line-clamp-1 tracking-tight group-hover:text-primary transition-colors">{course.title}</h3>
-                       <div className="space-y-2.5">
-                          <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
-                             <span className="text-text-muted">Course Progress</span>
-                             <span className="text-primary">{course.progress}%</span>
-                          </div>
-                          <div className="h-2 w-full bg-border-soft rounded-full overflow-hidden">
-                             <motion.div 
-                                initial={{ width: 0 }}
-                                whileInView={{ width: `${course.progress}%` }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 1, ease: "easeOut" }}
-                                className={`h-full ${course.color} shadow-lg shadow-primary/10`} 
-                             />
-                          </div>
-                       </div>
-                    </div>
-                 </Card>
-               ))}
+
+            <div className="flex flex-wrap gap-3">
+              <Button size="sm" className="bg-primary text-white rounded-btn h-10 px-6 font-bold shadow-ocean">
+                Resume Last Class
+              </Button>
+              <Button size="sm" variant="ghost" className="rounded-btn h-10 px-6 font-bold border border-border-soft bg-white">
+                Start Today's Test
+              </Button>
+              <Button size="sm" variant="ghost" className="rounded-btn h-10 px-6 font-bold border border-border-soft bg-white">
+                View Schedule
+              </Button>
             </div>
           </section>
 
-          {/* Subject-wise Progress Card */}
-          <section>
-             <h2 className="text-2xl font-bold text-foreground mb-8 px-2 tracking-tight">Focus Areas</h2>
-             <Card className="soft-card p-10 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-[80px]" />
-                <div className="space-y-8 relative z-10">
-                   {[
-                     { name: "Mathematics", value: 72, color: "bg-primary" },
-                     { name: "Physics", value: 88, color: "bg-indigo-600" },
-                     { name: "Chemistry", value: 65, color: "bg-sky-500" },
-                     { name: "Biology", value: 90, color: "bg-blue-400" },
-                   ].map((sub, i) => (
-                     <div key={i} className="space-y-2.5 group/row">
-                        <div className="flex justify-between items-end">
-                           <span className="text-base font-bold text-foreground group-hover/row:text-primary transition-colors">{sub.name}</span>
-                           <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">{sub.value}% COMPLETED</span>
-                        </div>
-                        <div className="h-2 w-full bg-border-soft rounded-full overflow-hidden">
-                           <motion.div 
-                             initial={{ width: 0 }}
-                             whileInView={{ width: `${sub.value}%` }}
-                             viewport={{ once: true }}
-                             transition={{ duration: 1, delay: i * 0.1 }}
-                             className={`h-full ${sub.color}`} 
-                           />
-                        </div>
-                     </div>
-                   ))}
+          {/* Stats Grid */}
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {stats.map((stat, i) => (
+              <Card key={i} className="soft-card p-6 border-none">
+                <div className="flex items-start justify-between mb-4">
+                  <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-xl flex items-center justify-center`}>
+                    <stat.icon className="w-6 h-6" />
+                  </div>
+                  <MoreVertical className="text-text-muted w-5 h-5 cursor-pointer" />
                 </div>
-             </Card>
+                <div className="space-y-1">
+                  <div className="text-3xl font-display font-bold text-text-main">{stat.value}</div>
+                  <div className="text-sm font-bold text-text-muted uppercase tracking-wider">{stat.label}</div>
+                  <div className="text-xs text-text-muted pt-2 border-t border-border-soft mt-2">{stat.sub}</div>
+                </div>
+              </Card>
+            ))}
+          </section>
+
+          {/* Continue Learning */}
+          <section className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-display font-bold text-text-main">Continue Learning</h2>
+              <Button variant="ghost" className="text-primary font-bold flex items-center gap-1 group">
+                View All <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {continueLearning.map((course, i) => (
+                <Card key={i} className="soft-card group p-5 border-none">
+                  <div className="space-y-4">
+                    <div className="aspect-video bg-bg-soft rounded-xl overflow-hidden relative">
+                       <div className="absolute inset-0 flex items-center justify-center bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
+                            <Play className="text-primary w-6 h-6 fill-primary" />
+                         </div>
+                       </div>
+                    </div>
+                    <div className="space-y-2">
+                       <div className="text-xs font-bold text-primary uppercase tracking-widest">{course.instructor}</div>
+                       <h3 className="text-lg font-bold text-text-main line-clamp-1 leading-tight">{course.title}</h3>
+                       <div className="space-y-2 pt-2">
+                         <div className="flex items-center justify-between text-[10px] uppercase font-bold text-text-muted">
+                           <span>{course.lastChapter}</span>
+                           <span>{course.progress}%</span>
+                         </div>
+                         <div className="h-2 w-full bg-bg-soft rounded-full overflow-hidden border border-border-soft">
+                            <div className="h-full bg-primary shadow-sm" style={{ width: `${course.progress}%` }} />
+                         </div>
+                       </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </section>
+
+          {/* Recent Activity */}
+          <section className="space-y-6">
+            <h2 className="text-2xl font-display font-bold text-text-main">Recent Activity</h2>
+            <Card className="soft-card p-2 border-none">
+              <div className="divide-y divide-border-soft">
+                {activity.map((item, i) => (
+                  <div key={i} className="p-4 flex items-center justify-between group hover:bg-bg-soft transition-colors first:rounded-t-xl last:rounded-b-xl">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-white border border-border-soft text-primary`}>
+                        {item.type === 'course' ? <Play className="w-5 h-5" /> : item.type === 'test' ? <Target className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-text-main group-hover:text-primary transition-colors">{item.text}</div>
+                        <div className="text-xs text-text-muted">{item.time}</div>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="icon" className="text-text-muted hover:text-primary h-8 w-8">
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </Card>
           </section>
         </div>
 
         {/* Right Panel */}
-        <div className="lg:col-span-4 space-y-10">
-           {/* Activity Heatmap */}
-           <Card className="soft-card p-8">
-              <h3 className="font-bold text-foreground mb-8 flex items-center justify-between tracking-tight">
-                 Activity Tracker
-                 <Flame className="w-5 h-5 text-orange-500" />
-              </h3>
-              <div className="grid grid-cols-7 gap-2">
-                 {Array.from({ length: 35 }).map((_, i) => (
-                    <motion.div 
-                      key={i} 
-                      whileHover={{ scale: 1.15 }}
-                      className={cn(
-                        "aspect-square rounded-[3px] cursor-help",
-                        Math.random() > 0.6 ? 'bg-primary' : 
-                        Math.random() > 0.8 ? 'bg-primary/40' : 'bg-border-soft'
-                      )}
-                    />
-                 ))}
+        <div className="space-y-10">
+          
+          {/* Streak Calendar */}
+          <Card className="soft-card p-6 border-none">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-display font-bold text-text-main">Study Streak</h3>
+              <Calendar className="text-text-muted w-5 h-5" />
+            </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-7 gap-1">
+                {Array.from({ length: 28 }).map((_, i) => (
+                  <div 
+                    key={i} 
+                    className={`aspect-square rounded-[4px] border border-border-soft ${[2, 5, 8, 9, 10, 14, 15, 16, 17].includes(i) ? 'bg-primary/40' : i === 18 ? 'bg-primary shadow-sm' : 'bg-bg-soft'}`} 
+                  />
+                ))}
               </div>
-              <div className="mt-8 flex items-center justify-between text-[10px] text-text-muted font-bold uppercase tracking-widest">
-                 <span>Less</span>
-                 <div className="flex gap-1.5 px-2">
-                    <div className="w-2.5 h-2.5 rounded-[2px] bg-border-soft" />
-                    <div className="w-2.5 h-2.5 rounded-[2px] bg-primary/40" />
-                    <div className="w-2.5 h-2.5 rounded-[2px] bg-primary" />
-                 </div>
-                 <span>More</span>
+              <div className="flex items-center justify-between text-[10px] text-text-muted font-bold uppercase tracking-widest pt-4 border-t border-border-soft">
+                <span>Less</span>
+                <div className="flex gap-1">
+                  <div className="w-2.5 h-2.5 bg-bg-soft rounded-sm" />
+                  <div className="w-2.5 h-2.5 bg-primary/20 rounded-sm" />
+                  <div className="w-2.5 h-2.5 bg-primary/60 rounded-sm" />
+                  <div className="w-2.5 h-2.5 bg-primary rounded-sm" />
+                </div>
+                <span>More</span>
               </div>
-           </Card>
+            </div>
+          </Card>
 
-           {/* Recent Badges */}
-           <Card className="soft-card p-8">
-              <h3 className="font-bold text-foreground mb-8 tracking-tight">Learning Milestones</h3>
-              <div className="grid grid-cols-2 gap-4">
-                 {[
-                   { name: "Quick Learner", color: "bg-yellow-100 text-yellow-600" },
-                   { name: "Consistent", color: "bg-blue-100 text-blue-600" },
-                   { name: "Top Scorer", color: "bg-indigo-100 text-indigo-600" },
-                   { name: "Hustler", color: "bg-sky-100 text-sky-600" },
-                 ].map((badge, i) => (
-                   <div key={i} className="group relative aspect-square rounded-xl bg-white border border-border-main shadow-sm flex flex-col items-center justify-center p-4 text-center hover:border-primary hover:shadow-md transition-all cursor-pointer">
-                      <div className={`w-10 h-10 rounded-full ${badge.color.split(' ')[0]} flex items-center justify-center mb-3 transition-transform group-hover:scale-110`}>
-                        <Trophy className={`w-5 h-5 ${badge.color.split(' ')[1]}`} />
-                      </div>
-                      <span className="text-[10px] font-bold text-foreground uppercase tracking-tight leading-tight opacity-70">{badge.name}</span>
-                   </div>
-                 ))}
-              </div>
-              <button className="w-full mt-8 py-2.5 rounded-btn text-[10px] font-bold text-text-muted uppercase tracking-widest border border-border-main hover:text-primary hover:border-primary/20 transition-all">
-                 View Achievements
-              </button>
-           </Card>
+          {/* Recent Badges */}
+          <Card className="soft-card p-6 border-none space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="font-display font-bold text-text-main">Recent Badges</h3>
+              <Trophy className="text-amber-500 w-5 h-5" />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="aspect-square rounded-2xl bg-bg-soft border border-border-soft flex items-center justify-center group hover:bg-white transition-all cursor-pointer">
+                  <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Zap className="text-primary w-6 h-6 fill-primary" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Button variant="ghost" className="w-full text-primary font-bold text-sm bg-primary-light h-10 rounded-xl">
+              View All Achievements
+            </Button>
+          </Card>
 
-           {/* Announcements */}
-           <Card className="soft-card p-8 bg-foreground text-white border-none">
-              <h3 className="font-bold text-white mb-8 flex items-center gap-3 tracking-tight">
-                <div className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(0,102,255,1)]" />
-                Latest Alerts
-              </h3>
-              <div className="space-y-6">
-                 {[
-                   { title: "Live Math Session at 4 PM", time: "2h ago", imp: true },
-                   { title: "Chemistry Mock Test is Live", time: "5h ago", imp: false },
-                 ].map((notif, i) => (
-                   <div key={i} className="flex gap-4 group cursor-pointer">
-                      <div className={`w-1.5 h-1.5 rounded-full mt-2 shrink-0 ${notif.imp ? 'bg-primary' : 'bg-white/20'}`} />
-                      <div>
-                         <div className="text-sm font-semibold text-white/90 leading-snug group-hover:text-primary transition-colors">{notif.title}</div>
-                         <div className="text-[10px] font-bold text-white/40 uppercase tracking-wider mt-1">{notif.time}</div>
-                      </div>
-                   </div>
-                 ))}
-              </div>
-           </Card>
+          {/* Announcements */}
+          <Card className="soft-card p-6 border-none space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="font-display font-bold text-text-main">Faculty Updates</h3>
+              <Bell className="text-text-muted w-5 h-5" />
+            </div>
+            <div className="space-y-4">
+              {[
+                { title: "Weekly Mock Test Live", time: "10m ago", color: "text-blue-500" },
+                { title: "Holiday on 21st March", time: "2h ago", color: "text-red-500" },
+              ].map((ann, i) => (
+                <div key={i} className="flex gap-4 p-3 rounded-xl hover:bg-bg-soft transition-colors cursor-pointer border border-transparent hover:border-border-soft">
+                  <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
+                  <div className="space-y-1">
+                    <div className="text-sm font-bold text-text-main leading-tight">{ann.title}</div>
+                    <div className="text-xs text-text-muted">Posted {ann.time}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
         </div>
       </div>
     </div>

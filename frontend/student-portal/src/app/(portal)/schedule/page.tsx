@@ -1,219 +1,114 @@
 "use client";
 
 import { useState } from "react";
-import { Card } from "@repo/ui/components/card";
-import { Button } from "@repo/ui/components/button";
-import { cn } from "@repo/ui/lib/utils";
+import { motion } from "framer-motion";
 import { 
-  Calendar, 
+  Calendar as CalendarIcon, 
   Clock, 
   MapPin, 
-  Video, 
   User, 
-  CheckCircle2, 
   ChevronLeft, 
-  ChevronRight,
-  TrendingUp,
-  Star,
-  Info
+  ChevronRight, 
+  Plus,
+  Play,
+  Zap,
+  Target
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { Button } from "@repo/ui/components/button";
+import { Card } from "@repo/ui/components/card";
+import { cn } from "@repo/ui/lib/utils";
 
-const weekDays = [
-  { day: "Mon", date: "16", current: true },
-  { day: "Tue", date: "17" },
-  { day: "Wed", date: "18" },
-  { day: "Thu", date: "19" },
-  { day: "Fri", date: "20" },
-  { day: "Sat", date: "21" },
-  { day: "Sun", date: "22" },
+const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const timeSlots = ["08:00 AM", "09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "01:00 PM", "02:00 PM"];
+
+const events = [
+  { day: "Tue", time: "09:00 AM", title: "Maths: Polynomials", type: "Live Class", instructor: "Dr. Sarah", color: "bg-blue-500" },
+  { day: "Tue", time: "11:00 AM", title: "Physics: Laws of Motion", type: "Recorded", instructor: "Prof. James", color: "bg-indigo-500" },
+  { day: "Wed", time: "10:00 AM", title: "Monthly Mock Test", type: "Test", instructor: "System", color: "bg-rose-500" },
+  { day: "Thu", time: "09:00 AM", title: "Chemistry Lab", type: "Live Class", instructor: "Dr. Elena", color: "bg-purple-500" },
 ];
 
-const sessions = [
-  {
-    id: 1,
-    title: "Quadratic Equations — Level 2",
-    time: "10:00 AM - 11:30 AM",
-    subject: "Mathematics",
-    instructor: "Dr. Elena Rossi",
-    type: "Live Interactive",
-    status: "Upcoming",
-    color: "bg-primary",
-  },
-  {
-    id: 2,
-    title: "Electromagnetic Induction",
-    time: "2:00 PM - 3:30 PM",
-    subject: "Physics",
-    instructor: "Prof. James Wilson",
-    type: "Recorded Lab",
-    status: "In 3 Hours",
-    color: "bg-indigo-600",
-  },
-  {
-    id: 3,
-    title: "Organic Chemistry Revision",
-    time: "5:00 PM - 6:00 PM",
-    subject: "Chemistry",
-    instructor: "Dr. Sarah Smith",
-    type: "Live Doubt Session",
-    status: "Later Today",
-    color: "bg-sky-500",
-  }
-];
-
-export default function Schedule() {
-  const [selectedDate, setSelectedDate] = useState("16");
-
+export default function SchedulePage() {
   return (
-    <div className="p-6 md:p-10 space-y-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-        <div>
+    <div className="space-y-10">
+      
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-1">
           <div className="badge mb-4">
-             <Calendar className="w-3 h-3 mr-2" />
-             Personal Calendar
+             <CalendarIcon className="w-3.5 h-3.5 mr-2" />
+             Weekly Planner
           </div>
-          <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter mb-2">My <span className="text-gradient">Timeline</span></h1>
-          <p className="text-slate-500 font-bold">Planned sessions and milestones for this week.</p>
+          <h1 className="text-4xl font-display font-bold text-text-main tracking-tight">Your <span className="text-gradient">Schedule</span></h1>
+          <p className="text-text-muted font-medium">Synced with your school and board exam dates.</p>
         </div>
-        
-        <div className="flex items-center gap-4">
-           <div className="flex bg-white border border-slate-100 p-1.5 rounded-2xl shadow-sm">
-              <button className="p-3 text-slate-400 hover:text-primary transition-colors"><ChevronLeft className="w-5 h-5" /></button>
-              <div className="px-6 flex items-center font-black text-sm text-slate-900 uppercase tracking-widest">March 2026</div>
-              <button className="p-3 text-slate-400 hover:text-primary transition-colors"><ChevronRight className="w-5 h-5" /></button>
+        <div className="flex items-center gap-3">
+           <div className="flex items-center gap-1.5 p-1.5 bg-white border border-border-main rounded-xl shadow-sm">
+              <button className="p-2 rounded-lg text-text-muted hover:bg-bg-soft"><ChevronLeft size={18} /></button>
+              <span className="px-4 text-xs font-bold uppercase tracking-widest text-text-main">March 16 - 22, 2026</span>
+              <button className="p-2 rounded-lg text-text-muted hover:bg-bg-soft"><ChevronRight size={18} /></button>
            </div>
-           <Button className="h-14 px-8 rounded-2xl bg-slate-900 text-white font-black text-xs uppercase tracking-widest shadow-2xl hover:bg-black active:scale-95 transition-all">Today</Button>
+           <Button className="h-12 px-6 rounded-xl bg-primary text-white font-bold shadow-ocean">
+              Sync Calendar
+           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        <div className="lg:col-span-8 space-y-10">
-           {/* Week Selector */}
-           <div className="flex items-center justify-between bg-white border border-slate-100 p-4 rounded-[2.5rem] shadow-sm">
-              {weekDays.map((d, i) => (
-                <button 
-                  key={i}
-                  onClick={() => setSelectedDate(d.date)}
-                  className={cn(
-                    "flex flex-col items-center gap-3 p-4 rounded-3xl min-w-[70px] transition-all group",
-                    selectedDate === d.date ? "bg-primary text-white shadow-xl shadow-primary-glow scale-110" : "hover:bg-slate-50"
-                  )}
-                >
-                   <span className={cn(
-                     "text-[10px] font-black uppercase tracking-widest",
-                     selectedDate === d.date ? "text-white/70" : "text-slate-400 group-hover:text-primary"
-                   )}>{d.day}</span>
-                   <span className="text-xl font-black tracking-tighter">{d.date}</span>
-                </button>
-              ))}
-           </div>
+      {/* Schedule Table */}
+      <Card className="soft-card p-0 border-none overflow-hidden overflow-x-auto">
+         <div className="min-w-[800px]">
+            <div className="grid grid-cols-8 border-b border-border-soft bg-bg-soft/50">
+               <div className="p-6 border-r border-border-soft" />
+               {days.map((day) => (
+                  <div key={day} className="p-6 text-center border-r border-border-soft last:border-none">
+                     <div className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">{day}</div>
+                     <div className={cn("text-lg font-display font-bold", day === "Tue" ? "text-primary scale-110" : "text-text-main")}>
+                        {day === "Mon" ? "16" : day === "Tue" ? "17" : day === "Wed" ? "18" : day === "Thu" ? "19" : day === "Fri" ? "20" : day === "Sat" ? "21" : "22"}
+                     </div>
+                  </div>
+               ))}
+            </div>
 
-           {/* Timeline */}
-           <div className="relative pl-12 space-y-8 before:absolute before:left-6 before:top-2 before:bottom-2 before:w-px before:bg-slate-100">
-              {sessions.map((session, i) => (
-                <motion.div
-                  key={session.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  className="relative"
-                >
-                   {/* Timeline Marker */}
-                   <div className={cn(
-                      "absolute -left-12 top-0 w-12 h-12 rounded-full border-4 border-white flex items-center justify-center shadow-xl z-10 transition-transform hover:scale-125",
-                      session.status === "Upcoming" ? "bg-primary" : "bg-slate-200"
-                   )}>
-                      <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                   </div>
-
-                   <Card className="soft-card p-1 group border-2 border-transparent hover:border-primary/10 overflow-hidden">
-                      <div className="flex flex-col md:flex-row md:items-center">
-                         <div className={cn("w-full md:w-48 p-8 flex flex-col items-center justify-center text-center border-b md:border-b-0 md:border-r border-slate-50", session.color.replace('bg-', 'bg-') + "/5")}>
-                            <div className={cn("text-xs font-black uppercase tracking-widest mb-1", session.color.replace('bg-', 'text-'))}>{session.subject}</div>
-                            <div className="text-sm font-black text-slate-900 tracking-tight">{session.time.split(' - ')[0]}</div>
-                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Start Time</div>
-                         </div>
-                         
-                         <div className="flex-1 p-8">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                               <div className="space-y-3">
-                                  <div className="flex items-center gap-3">
-                                     <span className="badge !bg-slate-50 !text-slate-500 !px-3 font-black text-[9px] border-slate-100 uppercase tracking-widest">{session.type}</span>
-                                     <span className={cn("text-[10px] font-black uppercase tracking-[0.2em]", session.status === "Upcoming" ? "text-primary" : "text-slate-400")}>{session.status}</span>
-                                  </div>
-                                  <h3 className="text-2xl font-black text-slate-900 tracking-tighter group-hover:text-primary transition-colors">{session.title}</h3>
-                                  <div className="flex items-center gap-4">
-                                     <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-                                        <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-black text-primary text-[8px] border border-slate-200 uppercase">
-                                           {session.instructor.split(' ').map(n => n[0]).join('')}
-                                        </div>
-                                        {session.instructor}
-                                     </div>
-                                  </div>
-                               </div>
-                               
-                               <div className="flex items-center gap-3">
-                                  <Button variant="outline" size="icon" className="w-12 h-12 rounded-2xl border-slate-100 hover:text-primary transition-all">
-                                     <Info className="w-5 h-5" />
-                                  </Button>
-                                  <Button className={cn(
-                                    "h-12 px-8 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl transition-all active:scale-95 flex items-center gap-3",
-                                    session.status === "Upcoming" ? "bg-primary text-white shadow-primary-glow" : "bg-slate-900 text-white"
-                                  )}>
-                                     <Video className="w-4 h-4" />
-                                     {session.status === "Upcoming" ? "Join Lobby" : "Watch Replay"}
-                                  </Button>
-                               </div>
-                            </div>
-                         </div>
-                      </div>
-                   </Card>
-                </motion.div>
-              ))}
-           </div>
-        </div>
-
-        {/* Sidebar Analytics */}
-        <div className="lg:col-span-4 space-y-10">
-           <Card className="soft-card p-10 bg-slate-900 text-white relative overflow-hidden flex flex-col items-center text-center">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full -mr-32 -mt-32 blur-[80px]" />
-              <div className="relative z-10 space-y-8 w-full">
-                 <div className="mx-auto w-24 h-24 rounded-[2rem] bg-white/10 flex items-center justify-center border border-white/20 shadow-2xl">
-                    <TrendingUp className="w-12 h-12 text-blue-400" />
-                 </div>
-                 <div className="space-y-2">
-                    <h2 className="text-4xl font-black tracking-tighter">Daily <br/> <span className="text-blue-400">Pace</span></h2>
-                    <p className="text-slate-400 font-bold text-sm">You've finished 85% of goals today.</p>
-                 </div>
-                 <div className="p-6 rounded-3xl bg-white/5 border border-white/10 space-y-4">
-                    <div className="flex justify-between items-center text-xs font-bold">
-                       <span className="text-slate-400">Total Hours Today</span>
-                       <span>4.5h / 6h</span>
-                    </div>
-                    <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                       <div className="h-full w-[75%] bg-blue-500 shadow-lg shadow-blue-500/50" />
-                    </div>
-                 </div>
-                 <button className="text-[10px] font-black text-primary uppercase tracking-[0.2em] hover:text-white transition-colors">Adjust Daily Goal</button>
-              </div>
-           </Card>
-
-           <Card className="soft-card p-8 border-2 border-primary/5">
-              <h3 className="font-black text-slate-900 mb-8 tracking-tight flex items-center gap-3">
-                 <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                 Study Tip of the Day
-              </h3>
-              <p className="text-slate-500 font-bold italic leading-relaxed">
-                 "Taking short 5-minute breaks every 30 minutes of deep work helps retain the memory of complex formulas for longer periods."
-              </p>
-              <div className="mt-8 pt-8 border-t border-slate-50 flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                 <span>- Dr. Sarah Smith</span>
-                 <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              </div>
-           </Card>
-        </div>
-      </div>
+            <div className="divide-y divide-border-soft">
+               {timeSlots.map((time) => (
+                  <div key={time} className="grid grid-cols-8 h-32">
+                     <div className="p-4 text-right border-r border-border-soft flex items-start justify-end">
+                        <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">{time}</span>
+                     </div>
+                     {days.map((day) => {
+                        const event = events.find(e => e.day === day && e.time === time);
+                        return (
+                           <div key={day} className="p-2 border-r border-border-soft last:border-none relative group">
+                              {event && (
+                                 <motion.div 
+                                   initial={{ opacity: 0, scale: 0.9 }}
+                                   animate={{ opacity: 1, scale: 1 }}
+                                   className={cn(
+                                     "h-full rounded-xl p-3 space-y-2 cursor-pointer transition-all hover:shadow-xl relative overflow-hidden",
+                                     event.color, "bg-opacity-10 border border-opacity-20",
+                                     event.color.replace('bg-', 'border-')
+                                   )}
+                                 >
+                                    <div className="flex items-center justify-between">
+                                       <span className={cn("text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md bg-white", event.color)}>{event.type}</span>
+                                       {event.type === 'Live Class' ? <Play size={12} className={event.color} /> : event.type === 'Test' ? <Target size={12} className={event.color} /> : <Zap size={12} className={event.color} />}
+                                    </div>
+                                    <div className={cn("text-xs font-bold leading-tight line-clamp-2", event.color.replace('bg-', 'text-'))}>{event.title}</div>
+                                    <div className="flex items-center gap-1.5 pt-1">
+                                       <div className="w-5 h-5 rounded-md bg-white flex items-center justify-center text-[8px] font-bold">SS</div>
+                                       <span className="text-[9px] font-medium text-text-muted opacity-80">{event.instructor}</span>
+                                    </div>
+                                 </motion.div>
+                              )}
+                              {!event && <div className="absolute inset-0 group-hover:bg-primary/5 transition-colors cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100"><Plus size={20} className="text-primary/20" /></div>}
+                           </div>
+                        );
+                     })}
+                  </div>
+               ))}
+            </div>
+         </div>
+      </Card>
     </div>
   );
 }

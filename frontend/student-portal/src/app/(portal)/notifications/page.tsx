@@ -1,205 +1,124 @@
 "use client";
 
 import { useState } from "react";
-import { Card } from "@repo/ui/components/card";
-import { Button } from "@repo/ui/components/button";
-import { cn } from "@repo/ui/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Bell, 
-  BookOpen, 
-  FlaskConical, 
-  PenTool, 
+  CheckCircle2, 
+  Target, 
   Trophy, 
-  Calendar,
-  Search,
-  CheckCircle2,
-  Trash2,
-  Filter,
-  ArrowRight
+  AlertCircle, 
+  ChevronRight, 
+  MoreVertical,
+  Check,
+  Settings,
+  MailOpen,
+  Trash2
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { Button } from "@repo/ui/components/button";
+import { Card } from "@repo/ui/components/card";
+import { cn } from "@repo/ui/lib/utils";
 
 const notifications = [
-  {
-    id: 1,
-    type: "Academic",
-    title: "New Recorded Class Available",
-    body: "Mathematics Chapter 5: Part 2 has been uploaded by Dr. Elena Rossi.",
-    time: "2 hours ago",
-    icon: BookOpen,
-    color: "bg-blue-500",
-    read: false
-  },
-  {
-    id: 2,
-    type: "Tests",
-    title: "Test Results are Live!",
-    body: "Your performance report for 'Algebraic Identities' is now available for review.",
-    time: "5 hours ago",
-    icon: FlaskConical,
-    color: "bg-indigo-600",
-    read: false
-  },
-  {
-    id: 3,
-    type: "Schedule",
-    title: "Live Session Reminder",
-    body: "Your Physics lab session starts in 1 hour. Get your notebooks ready!",
-    time: "8 hours ago",
-    icon: Calendar,
-    color: "bg-sky-500",
-    read: true
-  },
-  {
-    id: 4,
-    type: "Assignments",
-    title: "Deadline Approaching",
-    body: "Chemistry assignment 'Periodic Table Quiz' is due by midnight tonight.",
-    time: "1 day ago",
-    icon: PenTool,
-    color: "bg-orange-500",
-    read: true
-  }
+  { id: 1, title: "New Assignment Posted", body: "Dr. Sarah Smith uploaded 'Algebraic Identities Practice' due in 3 days.", type: "academic", time: "10 mins ago", read: false, icon: Target, color: "text-blue-500", bg: "bg-blue-50" },
+  { id: 2, title: "Leaderboard Update", body: "Congratulations! You've climbed 2 ranks in Grade 10 Mathematics.", type: "social", time: "2 hours ago", read: false, icon: Trophy, color: "text-amber-500", bg: "bg-amber-50" },
+  { id: 3, title: "System Maintenance", body: "Base Learn will be down for scheduled maintenance tonight at 12 AM.", type: "system", time: "5 hours ago", read: true, icon: AlertCircle, color: "text-red-500", bg: "bg-red-50" },
+  { id: 4, title: "Class Completed", body: "You finished 'Laws of Motion - Part 1'. View your summary notes.", type: "academic", time: "Yesterday", read: true, icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-50" },
 ];
 
-export default function Notifications() {
-  const [activeTab, setActiveTab] = useState("All");
+export default function NotificationsPage() {
+  const [activeFilter, setActiveFilter] = useState("All");
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
+    <div className="space-y-10 max-w-4xl mx-auto">
+      
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-1">
           <div className="badge mb-4">
              <Bell className="w-3.5 h-3.5 mr-2" />
-             Communication Center
+             Inbox
           </div>
-          <h1 className="text-display mb-2">My <span className="text-gradient">Alerts</span></h1>
-          <p className="text-text-muted font-medium">Stay updated with class schedules, tests, and grades.</p>
+          <h1 className="text-4xl font-display font-bold text-text-main tracking-tight">Recent <span className="text-gradient">Notifications</span></h1>
+          <p className="text-text-muted font-medium">Clear your headspace and stay updated.</p>
         </div>
-        
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="h-11 px-6 rounded-btn border-border-main bg-white text-text-muted font-semibold text-sm hover:bg-primary-light hover:text-primary transition-all">
-             Mark All as Read
+          <Button variant="ghost" className="h-11 px-4 text-text-muted hover:text-primary transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2">
+             <Check size={16} /> Mark all as read
           </Button>
-          <Button variant="destructive" className="h-11 px-6 rounded-btn bg-red-50 text-red-500 border-none font-semibold text-sm hover:bg-red-500 hover:text-white transition-all">
-             <Trash2 className="w-4 h-4 mr-2" />
-             Clear All
+          <Button variant="ghost" className="h-11 w-11 p-0 rounded-xl border border-border-main bg-white text-text-muted hover:text-primary shadow-sm flex items-center justify-center">
+             <Settings size={20} />
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8 space-y-6">
-           <div className="flex items-center gap-2 p-1.5 bg-white border border-border-main rounded-xl w-fit shadow-sm overflow-x-auto no-scrollbar max-w-full">
-              {["All", "Academic", "Tests", "Assignments", "System"].map((tab) => (
-                <button
-                   key={tab}
-                   onClick={() => setActiveTab(tab)}
-                   className={cn(
-                     "px-6 py-2 rounded-lg text-xs font-semibold transition-all duration-300",
-                     activeTab === tab ? "bg-primary text-white shadow-md shadow-primary/10" : "text-text-muted hover:text-primary hover:bg-primary-light"
-                   )}
-                >
-                   {tab}
-                </button>
-              ))}
-           </div>
+      {/* Filters */}
+      <div className="flex items-center gap-2 p-1.5 bg-white border border-border-main rounded-2xl w-fit shadow-sm overflow-x-auto">
+        {["All", "Academic", "Social", "System"].map((f) => (
+          <button
+            key={f}
+            onClick={() => setActiveFilter(f)}
+            className={cn(
+              "px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap",
+              activeFilter === f ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-text-muted hover:text-primary hover:bg-primary-light"
+            )}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
 
-           <div className="space-y-4">
-             {notifications.map((notif, i) => (
+      {/* List */}
+      <div className="space-y-px bg-white border border-border-main rounded-3xl overflow-hidden shadow-sm">
+         <AnimatePresence mode="popLayout">
+            {notifications.map((n, i) => (
                <motion.div
-                 key={notif.id}
-                 initial={{ opacity: 0, y: 10 }}
-                 animate={{ opacity: 1, y: 0 }}
-                 transition={{ delay: i * 0.05 }}
+                  key={n.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className={cn(
+                    "group p-6 flex flex-col md:flex-row items-start gap-6 border-b border-border-soft last:border-none transition-all cursor-pointer",
+                    n.read ? "bg-transparent" : "bg-primary-light/30"
+                  )}
                >
-                 <Card className={cn(
-                    "soft-card p-0 overflow-hidden border transition-all cursor-pointer",
-                    notif.read ? "opacity-75 bg-white/50" : "border-primary/5 bg-white"
-                 )}>
-                    <div className="flex flex-col md:flex-row items-center p-6 gap-6">
-                       <div className={cn(
-                          "w-14 h-14 rounded-lg flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-105",
-                          notif.color, "text-white"
-                       )}>
-                          <notif.icon className="w-6 h-6" />
-                       </div>
-                       
-                       <div className="flex-1 space-y-1 text-center md:text-left">
-                          <div className="flex flex-col md:flex-row md:items-center gap-2">
-                             <span className={cn(
-                                "text-[10px] font-bold uppercase tracking-wider",
-                                notif.read ? "text-text-muted" : "text-primary"
-                             )}>{notif.type}</span>
-                             <div className="hidden md:block w-1 h-1 rounded-full bg-border-main" />
-                             <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">{notif.time}</span>
-                          </div>
-                          <h3 className={cn(
-                             "text-lg font-semibold tracking-tight",
-                             notif.read ? "text-text-muted" : "text-foreground"
-                          )}>{notif.title}</h3>
-                          <p className="text-sm text-text-muted leading-relaxed">{notif.body}</p>
-                       </div>
+                  <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-white", n.bg, n.color)}>
+                     <n.icon size={22} />
+                  </div>
+                  
+                  <div className="flex-1 space-y-1">
+                     <div className="flex items-center justify-between gap-4">
+                        <h3 className={cn("text-base font-bold text-text-main leading-tight", !n.read && "font-black")}>
+                           {n.title}
+                           {!n.read && <span className="ml-3 inline-block w-2.5 h-2.5 bg-primary rounded-full animate-pulse" />}
+                        </h3>
+                        <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">{n.time}</span>
+                     </div>
+                     <p className="text-sm font-medium text-text-muted leading-relaxed opacity-80 max-w-2xl">{n.body}</p>
+                     
+                     <div className="pt-4 flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button className="text-[10px] font-bold text-primary uppercase tracking-widest flex items-center gap-1.5 hover:underline">
+                           View Details <ChevronRight size={12} />
+                        </button>
+                        <div className="h-3 w-px bg-border-main" />
+                        <button className="text-[10px] font-bold text-text-muted uppercase tracking-widest flex items-center gap-1.5 hover:text-rose-500">
+                           <Trash2 size={12} /> Delete
+                        </button>
+                     </div>
+                  </div>
 
-                       <div className="flex items-center gap-4 shrink-0">
-                          {!notif.read && <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(0,102,255,0.4)]" />}
-                          <button className="p-2.5 rounded-lg bg-bg-soft text-text-muted hover:text-primary hover:bg-primary-light transition-all">
-                             <ArrowRight className="w-4 h-4" />
-                          </button>
-                       </div>
-                    </div>
-                 </Card>
+                  <button className="text-text-muted hover:text-primary transition-colors opacity-0 group-hover:opacity-100">
+                     <MoreVertical size={20} />
+                  </button>
                </motion.div>
-             ))}
-           </div>
-        </div>
+            ))}
+         </AnimatePresence>
+      </div>
 
-        {/* Sidebar */}
-        <div className="lg:col-span-4 space-y-8">
-           <Card className="soft-card p-8 bg-foreground text-white relative overflow-hidden flex flex-col items-center text-center">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full -mr-32 -mt-32 blur-[80px]" />
-              <div className="relative z-10 space-y-6 w-full">
-                 <div className="mx-auto w-20 h-20 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 shadow-xl">
-                    <Trophy className="w-10 h-10 text-primary-light" />
-                 </div>
-                 <div className="space-y-2">
-                    <h2 className="text-3xl font-bold tracking-tight text-white">Stay Focused</h2>
-                    <p className="text-primary-light/70 font-medium text-sm leading-relaxed">Ensure push notifications are active for live session reminders.</p>
-                 </div>
-                 <Button className="w-full h-11 rounded-btn bg-white text-foreground font-bold text-xs shadow-md hover:bg-primary-light transition-all">
-                    Enable Push Notifications
-                 </Button>
-              </div>
-           </Card>
-
-           <Card className="soft-card p-8">
-              <h3 className="font-bold text-foreground mb-6 tracking-tight flex items-center gap-2">
-                 <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                 Preference Center
-              </h3>
-              <div className="space-y-5">
-                 {[
-                   { label: "Class Updates", active: true },
-                   { label: "Test Results", active: true },
-                   { label: "Doubt Replies", active: false },
-                   { label: "Assignments", active: true },
-                 ].map((pref, i) => (
-                   <div key={i} className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">{pref.label}</span>
-                      <button className={cn(
-                        "w-10 h-5 rounded-full transition-all relative",
-                        pref.active ? "bg-primary" : "bg-border-main"
-                      )}>
-                         <div className={cn(
-                           "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm",
-                           pref.active ? "left-5.5" : "left-0.5"
-                         )} />
-                      </button>
-                   </div>
-                 ))}
-              </div>
-           </Card>
-        </div>
+      <div className="flex justify-center pt-6">
+         <Button variant="ghost" className="text-text-muted font-bold flex items-center gap-2">
+            View Older Notifications <MailOpen size={16} />
+         </Button>
       </div>
     </div>
   );

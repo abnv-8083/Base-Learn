@@ -1,220 +1,142 @@
 "use client";
 
 import { useState } from "react";
-import { Card } from "@repo/ui/components/card";
-import { Button } from "@repo/ui/components/button";
-import { cn } from "@repo/ui/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   MessageSquare, 
   Search, 
-  Plus, 
+  Filter, 
   ThumbsUp, 
-  MessageCircle, 
-  CheckCircle2, 
-  User, 
-  Filter,
-  ArrowRight,
-  TrendingUp,
+  Share2, 
   Image as ImageIcon,
-  ChevronDown
+  CheckCircle2,
+  ChevronRight,
+  Plus,
+  MessageCircle,
+  Clock
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { Button } from "@repo/ui/components/button";
+import { Card } from "@repo/ui/components/card";
+import { Badge } from "@repo/ui/components/badge";
+import { cn } from "@repo/ui/lib/utils";
 
-const doubts = [
-  {
-    id: 1,
-    title: "How to solve quadratic equations using completing square method?",
-    description: "I'm confused about why we add (b/2)² to both sides. Can someone explain the intuition behind it?",
-    subject: "Math",
-    chapter: "Quadratic Equations",
-    user: "Arjun K.",
-    grade: "Grade 9",
-    upvotes: 24,
-    replies: 12,
-    resolved: true,
-    time: "2h ago",
-    instructorReplied: true
-  },
-  {
-    id: 2,
-    title: "Difference between Speed and Velocity in Circular Motion?",
-    description: "Is velocity constant if speed is constant in uniform circular motion? This part of the chapter is slightly tricky.",
-    subject: "Physics",
-    chapter: "Motion",
-    user: "Sneha M.",
-    grade: "Grade 10",
-    upvotes: 18,
-    replies: 5,
-    resolved: false,
-    time: "5h ago",
-    instructorReplied: false
-  },
-  {
-    id: 3,
-    title: "Formula for Sodium Bicarbonate decomposition?",
-    description: "I need the exact balanced equation for heating baking soda in a dry test tube. Help appreciated!",
-    subject: "Chemistry",
-    chapter: "Acid Bases & Salts",
-    user: "Rahul S.",
-    grade: "Grade 10",
-    upvotes: 8,
-    replies: 3,
-    resolved: false,
-    time: "1d ago",
-    instructorReplied: true
-  }
+const threads = [
+  { id: 1, author: "Rahul Singh", grade: "10th", subject: "Physics", topic: "Laws of Motion", title: "Difficulty in understanding the conservation of momentum in elastic collisions. Can anyone explain with an example?", upvotes: 12, replies: 5, resolved: true, time: "1h ago" },
+  { id: 2, author: "Priya Das", grade: "9th", subject: "Math", topic: "Polynomials", title: "What is the difference between factor theorem and remainder theorem? When to use which?", upvotes: 8, replies: 3, resolved: false, time: "3h ago" },
+  { id: 3, author: "Sara Khan", grade: "10th", subject: "Chemistry", topic: "Organic Compounds", title: "How to remember the functional groups in sequence for IUPAC naming?", upvotes: 24, replies: 12, resolved: true, time: "Yseterday" },
 ];
 
-export default function Doubts() {
+export default function DoubtsPage() {
   const [activeTab, setActiveTab] = useState("All");
 
   return (
-    <div className="p-6 md:p-10 space-y-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-        <div>
+    <div className="space-y-10 max-w-5xl mx-auto">
+      
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-1">
           <div className="badge mb-4">
-             <MessageSquare className="w-3 h-3 mr-2" />
-             Doubt Resolution Forum
+             <MessageCircle className="w-3.5 h-3.5 mr-2" />
+             Community Q&A
           </div>
-          <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter mb-2">Get <span className="text-gradient">Answers</span></h1>
-          <p className="text-slate-500 font-bold">Ask anything! Our community of experts and mentors is here to help.</p>
+          <h1 className="text-4xl font-display font-bold text-text-main tracking-tight">Doubt <span className="text-gradient">Forum</span></h1>
+          <p className="text-text-muted font-medium">Get answers from subjects experts and top learners.</p>
         </div>
-        
-        <Button className="h-16 px-10 rounded-[2rem] bg-slate-900 text-white font-black text-xs uppercase tracking-widest shadow-2xl hover:bg-black active:scale-95 transition-all flex items-center gap-3">
-           <Plus className="w-5 h-5 text-primary" />
-           Post a New Doubt
+        <Button className="h-14 px-8 rounded-2xl bg-primary text-white font-bold shadow-ocean hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
+           <Plus size={20} />
+           Ask a Doubt
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        {/* Feed */}
-        <div className="lg:col-span-8 space-y-8">
-           <div className="flex items-center gap-6 p-2 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm mb-6">
-              <div className="relative flex-1 px-4">
-                 <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                 <input 
-                   type="text" 
-                   placeholder="Search previous questions..." 
-                   className="w-full h-14 bg-transparent border-none pl-10 text-sm text-slate-900 focus:outline-none font-bold"
-                 />
-              </div>
-              <div className="h-8 w-px bg-slate-100" />
-              <button className="px-8 flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-all">
-                 <Filter className="w-4 h-4" />
-                 Filter
-              </button>
-           </div>
-
-           <div className="space-y-6">
-             {doubts.map((doubt, i) => (
-               <motion.div
-                 key={doubt.id}
-                 initial={{ opacity: 0, y: 20 }}
-                 animate={{ opacity: 1, y: 0 }}
-                 transition={{ delay: i * 0.1 }}
-               >
-                 <Card className="soft-card p-8 group border-2 border-transparent hover:border-primary/5 cursor-pointer">
-                    <div className="flex items-start justify-between gap-6 mb-6">
-                       <div className="flex-1 space-y-4">
-                          <div className="flex items-center gap-3">
-                             <span className="badge !bg-primary/5 !text-primary border-primary/20">{doubt.subject}</span>
-                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{doubt.chapter}</span>
-                          </div>
-                          <h3 className="text-xl font-black text-slate-900 leading-tight tracking-tight group-hover:text-primary transition-colors">{doubt.title}</h3>
-                          <p className="text-slate-500 font-bold text-sm line-clamp-2">{doubt.description}</p>
-                       </div>
-                       
-                       <div className="flex flex-col items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100 min-w-[72px]">
-                          <button className="text-primary hover:scale-110 transition-transform">
-                             <ThumbsUp className="w-6 h-6 fill-primary/10" />
-                          </button>
-                          <span className="text-sm font-black text-slate-900">{doubt.upvotes}</span>
-                       </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-6 border-t border-slate-50">
-                       <div className="flex items-center gap-6">
-                          <div className="flex items-center gap-3">
-                             <div className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center font-black text-primary text-[10px] shadow-sm">
-                                {doubt.user[0]}
-                             </div>
-                             <div className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{doubt.user}</div>
-                          </div>
-                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{doubt.time}</div>
-                       </div>
-                       
-                       <div className="flex items-center gap-8">
-                          <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                             <MessageCircle className="w-4 h-4" />
-                             {doubt.replies} Replies
-                          </div>
-
-                          {doubt.instructorReplied && (
-                            <div className="badge !bg-emerald-50 !text-emerald-600 border-emerald-100 flex items-center gap-1.5 font-black text-[9px]">
-                               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                               MENTOR RESPONDED
-                            </div>
-                          )}
-
-                          {doubt.resolved ? (
-                             <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
-                                <CheckCircle2 className="w-5 h-5" />
-                             </div>
-                          ) : (
-                             <ArrowRight className="w-5 h-5 text-slate-200 group-hover:text-primary transition-all translate-x-0 group-hover:translate-x-1" />
-                          )}
-                       </div>
-                    </div>
-                 </Card>
-               </motion.div>
-             ))}
-           </div>
+      {/* Search & Tabs */}
+      <div className="space-y-6">
+        <div className="relative">
+          <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
+          <input 
+            type="text" 
+            placeholder="Search for questions or topics..." 
+            className="w-full h-16 bg-white border border-border-main rounded-2xl pl-16 pr-6 text-sm font-medium focus:ring-4 focus:ring-primary/5 transition-all shadow-sm"
+          />
         </div>
 
-        {/* Categories / Stats Sidebar */}
-        <div className="lg:col-span-4 space-y-10">
-           <Card className="soft-card p-10 bg-slate-900 text-white overflow-hidden relative">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full -mr-32 -mt-32 blur-[80px]" />
-              <div className="relative z-10 space-y-10">
-                 <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-black tracking-tight leading-none">Your <br/> <span className="text-primary">Doubt Stats</span></h2>
-                    <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/10 shadow-lg">
-                       <TrendingUp className="w-6 h-6 text-primary" />
-                    </div>
-                 </div>
-                 
-                 <div className="grid grid-cols-2 gap-6">
-                    <div>
-                       <div className="text-4xl font-black tracking-tighter text-white">12</div>
-                       <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Asked</div>
-                    </div>
-                    <div>
-                       <div className="text-4xl font-black tracking-tighter text-emerald-400">08</div>
-                       <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Resolved</div>
-                    </div>
-                 </div>
-
-                 <div className="space-y-4 pt-10 border-t border-white/5">
-                    <p className="text-xs font-bold text-slate-400">Mentors typically reply in <span className="text-white">Under 2 Hours</span></p>
-                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                       <div className="h-full w-[85%] bg-primary shadow-lg shadow-primary-glow" />
-                    </div>
-                 </div>
-              </div>
-           </Card>
-
-           <Card className="soft-card p-8 border-2 border-primary/5">
-              <h3 className="text-lg font-black text-slate-900 mb-8 tracking-tight">Browse Topics</h3>
-              <div className="space-y-4">
-                 {["Trigonometry", "Organic Chemistry", "Electrostatics", "Shakespeare", "French Revolution"].map((topic, i) => (
-                   <button key={i} className="w-full flex items-center justify-between p-4 rounded-2xl border border-slate-50 bg-slate-50/50 hover:bg-white hover:border-primary/20 hover:shadow-md transition-all group">
-                      <span className="text-sm font-black text-slate-500 group-hover:text-slate-900 transition-colors uppercase tracking-widest leading-none">{topic}</span>
-                      <ChevronDown className="w-4 h-4 text-slate-300 -rotate-90 group-hover:text-primary" />
-                   </button>
-                 ))}
-              </div>
-           </Card>
+        <div className="flex items-center gap-1.5 p-1.5 bg-white border border-border-main rounded-2xl w-fit shadow-sm">
+           {["All", "Unanswered", "Resolved", "My Doubts"].map((tab) => (
+             <button
+               key={tab}
+               onClick={() => setActiveTab(tab)}
+               className={cn(
+                 "px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all",
+                 activeTab === tab ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-text-muted hover:text-primary hover:bg-primary-light"
+               )}
+             >
+               {tab}
+             </button>
+           ))}
         </div>
+      </div>
+
+      {/* Threads List */}
+      <div className="space-y-6">
+        {threads.map((thread, i) => (
+          <motion.div
+            key={thread.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+          >
+            <Card className="soft-card p-0 border-none group cursor-pointer hover:shadow-2xl transition-all relative overflow-hidden">
+              <div className="p-8 space-y-6">
+                 <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                       <div className="w-10 h-10 rounded-xl bg-bg-soft flex items-center justify-center font-bold text-sm text-text-muted border border-border-soft">
+                          {thread.author.split(' ').map(n => n[0]).join('')}
+                       </div>
+                       <div>
+                          <div className="text-sm font-bold text-text-main flex items-center gap-2">
+                             {thread.author}
+                             <span className="text-[10px] bg-primary-light text-primary px-2 py-0.5 rounded-md uppercase">Grade {thread.grade}</span>
+                          </div>
+                          <div className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-0.5">{thread.time}</div>
+                       </div>
+                    </div>
+                    {thread.resolved && (
+                       <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 flex items-center gap-1.5 font-bold uppercase tracking-widest text-[10px] px-3 py-1.5 rounded-lg">
+                          <CheckCircle2 size={12} /> Resolved
+                       </Badge>
+                    )}
+                 </div>
+
+                 <div className="space-y-3">
+                    <div className="flex gap-2">
+                       <span className="text-[10px] font-bold text-primary uppercase tracking-widest bg-primary-light px-2 py-1 rounded-md">{thread.subject}</span>
+                       <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest bg-bg-soft px-2 py-1 rounded-md">{thread.topic}</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-text-main leading-snug group-hover:text-primary transition-colors">{thread.title}</h3>
+                 </div>
+
+                 <div className="flex items-center justify-between pt-6 border-t border-border-soft">
+                    <div className="flex items-center gap-6">
+                       <button className="flex items-center gap-2 text-text-muted hover:text-primary transition-colors text-xs font-bold">
+                          <ThumbsUp size={16} /> {thread.upvotes}
+                       </button>
+                       <button className="flex items-center gap-2 text-text-muted hover:text-primary transition-colors text-xs font-bold">
+                          <MessageSquare size={16} /> {thread.replies} Replies
+                       </button>
+                    </div>
+                    <Button variant="ghost" className="h-10 px-4 rounded-xl text-primary font-bold group">
+                       View Discussion <ChevronRight size={16} className="ml-1 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                 </div>
+              </div>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="flex justify-center pt-8">
+         <Button variant="ghost" className="text-text-muted font-bold flex items-center gap-2">
+             Load More Questions <ChevronRight size={16} />
+         </Button>
       </div>
     </div>
   );

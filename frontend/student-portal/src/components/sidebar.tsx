@@ -35,7 +35,6 @@ const navigation = [
   { name: "Doubts", href: "/doubts", icon: MessageSquare },
   { name: "Resources", href: "/materials", icon: FolderOpen },
   { name: "Profile", href: "/profile", icon: User },
-  { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function Sidebar() {
@@ -74,17 +73,6 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="p-6 mt-auto">
-        <div className="p-6 rounded-card bg-bg-soft border border-border-main relative overflow-hidden group/upgrade">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -mr-10 -mt-10 group-hover/upgrade:scale-150 transition-transform duration-700" />
-          <p className="badge mb-3">Premium</p>
-          <p className="text-sm font-bold text-foreground mb-1">Unlock Pro Features</p>
-          <p className="text-xs font-medium text-text-muted mb-6 leading-relaxed">Access 3D simulations and elite mentorship.</p>
-          <Button className="w-full h-10 bg-primary text-white text-xs font-bold rounded-btn shadow-md hover:bg-primary-dark transition-all active:scale-95">
-            GO PREMIUM
-          </Button>
-        </div>
-      </div>
     </aside>
   );
 }
