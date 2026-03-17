@@ -1,0 +1,313 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.title {
+  font-size: 1.8rem;
+  font-weight: 850;
+  color: var(--color-text-main);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-top: 0.35rem;
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.miniStat {
+  padding: 1.25rem 2rem;
+}
+
+.msLabel {
+  font-size: 0.75rem;
+  font-weight: 850;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.msVal {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--color-primary);
+  margin-top: 0.25rem;
+}
+
+.creatorOverlay {
+  padding: 2.5rem;
+  animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.creatorHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.creatorTitle {
+  font-size: 1.2rem;
+  font-weight: 850;
+  color: var(--color-text-main);
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.creatorForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.inputGroup label {
+  font-size: 0.8rem;
+  font-weight: 850;
+  color: var(--color-text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.input, .select, .textarea {
+  padding: 0.85rem 1.25rem;
+  background: var(--color-bg-soft);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 600;
+  outline: none;
+}
+
+.textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.creatorFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.scheduleBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1.5rem;
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.listArea {
+  padding: 2rem;
+}
+
+.listNav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tabs {
+  display: flex;
+  gap: 2rem;
+}
+
+.tab {
+  background: none;
+  border: none;
+  padding: 1.5rem 0;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  position: relative;
+}
+
+.activeTab {
+  color: var(--color-primary);
+}
+
+.activeTab::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-primary);
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--color-bg-soft);
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-md);
+  width: 280px;
+}
+
+.searchBox input {
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  width: 100%;
+}
+
+.historyTable {
+  margin-top: 1.5rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  text-align: left;
+  padding: 1rem;
+  font-size: 0.75rem;
+  font-weight: 850;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.table td {
+  padding: 1.25rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.titleCell {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.annIcon {
+  width: 34px;
+  height: 34px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.annTitleText {
+  font-size: 0.95rem;
+  font-weight: 850;
+  color: var(--color-text-main);
+}
+
+.targetTag {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+}
+
+.dateText {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+  opacity: 0.8;
+}
+
+.readRateCell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100px;
+}
+
+.rateVal {
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.rateBar {
+  height: 4px;
+  background: var(--color-bg-soft);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.rateFill {
+  height: 100%;
+  background: var(--color-success);
+}
+
+.urgencyBadge {
+  font-size: 0.7rem;
+  font-weight: 850;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+}
+
+.urgUrgent { background: rgba(239, 68, 68, 0.1); color: var(--color-danger); }
+.urgImp { background: rgba(245, 158, 11, 0.1); color: var(--color-warning); }
+.urgNormal { background: var(--color-bg-soft); color: var(--color-text-muted); }
+
+.actionCell {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.viewBtn, .moreBtn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
