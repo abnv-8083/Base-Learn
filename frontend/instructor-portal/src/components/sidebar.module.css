@@ -1,0 +1,222 @@
+.sidebar {
+  width: 280px;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(16px) saturate(180%);
+  border-right: 1px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  z-index: 100;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.02);
+  transition: all var(--transition-normal);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem 0.5rem 2.5rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent);
+}
+
+.logoSquare {
+  width: 44px;
+  height: 44px;
+  background: var(--color-primary);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 20px -8px rgba(0, 102, 255, 0.4);
+  transform: rotate(-3deg);
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.sidebar:hover .logoSquare {
+  transform: rotate(0deg) scale(1.05);
+}
+
+.brandInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.brandName {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--color-text-main);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.portalTag {
+  font-size: 0.65rem;
+  font-weight: 850;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-top: 0.25rem;
+  opacity: 0.9;
+}
+
+.scrollArea {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0 -0.5rem;
+  padding: 0 0.5rem;
+  mask-image: linear-gradient(to bottom, transparent, black 5%, black 95%, transparent);
+}
+
+.scrollArea::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scrollArea::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+}
+
+.navSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 2rem;
+}
+
+.navItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1.15rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-weight: 750;
+  font-size: 0.9rem;
+  border-radius: 12px;
+  transition: all var(--transition-fast);
+  border: 1px solid transparent;
+}
+
+.navItem:hover {
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-main);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  transform: translateX(4px);
+}
+
+.navItem svg {
+  transition: transform 0.3s ease;
+}
+
+.navItem:hover svg {
+  transform: scale(1.1);
+  color: var(--color-primary);
+}
+
+.active {
+  background: white;
+  color: var(--color-primary);
+  box-shadow: 0 8px 16px -4px rgba(0, 102, 255, 0.1);
+  border-color: rgba(0, 102, 255, 0.1);
+}
+
+.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 25%;
+  bottom: 25%;
+  width: 4px;
+  background: var(--color-primary);
+  border-radius: 0 4px 4px 0;
+  box-shadow: 2px 0 8px rgba(0, 102, 255, 0.3);
+}
+
+.footer {
+  margin-top: auto;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.userProfile {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  transition: all 0.3s ease;
+}
+
+.userProfile:hover {
+  background: white;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: white;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 850;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 10px rgba(0, 102, 255, 0.2);
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.userName {
+  font-size: 0.9rem;
+  font-weight: 850;
+  color: var(--color-text-main);
+  letter-spacing: -0.01em;
+}
+
+.userRole {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 1px;
+}
+
+.signOutBtn {
+  margin-top: 1rem;
+  width: 100%;
+  padding: 0.85rem;
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  border-radius: 12px;
+  color: var(--color-danger);
+  font-weight: 800;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.signOutBtn:hover {
+  background: rgba(239, 68, 68, 0.05);
+  border-color: var(--color-danger);
+  transform: scale(0.98);
+}

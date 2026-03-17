@@ -1,0 +1,309 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.title {
+  font-size: 1.8rem;
+  font-weight: 850;
+  color: var(--color-text-main);
+  margin-bottom: 0.25rem;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.headerActions {
+  display: flex;
+  gap: 1rem;
+}
+
+.dateBtn {
+  background: white;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  gap: 0.5rem;
+}
+
+.exportBtn {
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+.reportTabs {
+  display: flex;
+  background: var(--color-bg-soft);
+  padding: 0.3rem;
+  border-radius: var(--radius-md);
+  width: fit-content;
+}
+
+.reportTab {
+  border: none;
+  background: none;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all var(--transition-fast);
+}
+
+.activeTab {
+  background: white;
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.5rem;
+}
+
+.leftCol {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.analyticsPanel {
+  padding: 2rem;
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+}
+
+.panelTitle {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--color-text-main);
+}
+
+.metric {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+}
+
+.heatmapArea {
+  margin-bottom: 2rem;
+}
+
+.heatmapGrid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.heatSquare {
+  aspect-ratio: 1;
+  background: var(--color-primary);
+  border-radius: 4px;
+}
+
+.heatmapLegend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.gradientBar {
+  width: 200px;
+  height: 8px;
+  background: linear-gradient(to right, rgba(0, 102, 255, 0.2), var(--color-primary));
+  border-radius: 4px;
+}
+
+.insightBox {
+  display: flex;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: rgba(0, 102, 255, 0.03);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-primary-light);
+}
+
+.insightIcon {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.insightBox p {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--color-text-main);
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.miniMetric {
+  padding: 1.25rem;
+}
+
+.mmHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.mmLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.mmValue {
+  font-size: 1.5rem;
+  font-weight: 850;
+  color: var(--color-text-main);
+}
+
+.rightCol {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.comparisonBox {
+  padding: 1.5rem;
+}
+
+.compList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.compItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.compName {
+  width: 120px;
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--color-text-main);
+}
+
+.compTrack {
+  flex: 1;
+  height: 6px;
+  background: var(--color-bg-soft);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.compFill {
+  height: 100%;
+}
+
+.fill-high { background: var(--color-success); }
+.fill-mid { background: var(--color-primary); }
+.fill-low { background: var(--color-danger); }
+
+.compVal {
+  width: 40px;
+  text-align: right;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--color-text-main);
+}
+
+.scheduledReports {
+  padding: 1.5rem;
+  background: white;
+}
+
+.scheduleList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1.25rem 0;
+}
+
+.scheduleItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--color-bg-soft);
+  border-radius: var(--radius-md);
+}
+
+.sInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.sName {
+  font-size: 0.85rem;
+  font-weight: 750;
+  color: var(--color-text-main);
+}
+
+.sTime {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.addSchedule {
+  width: 100%;
+  padding: 0.75rem;
+  background: none;
+  border: 1px dashed var(--color-border);
+  color: var(--color-text-muted);
+  font-weight: 700;
+  font-size: 0.8rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.addSchedule:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
