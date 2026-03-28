@@ -8,6 +8,7 @@ const Batch = require('../models/Batch');
 const LiveClass = require('../models/LiveClass');
 const Assignment = require('../models/Assignment');
 const Test = require('../models/Test');
+const ProfileRequest = require('../models/ProfileRequest');
 const logAction = require('../utils/logAction');
 
 // GET /api/faculty/dashboard
@@ -209,4 +210,25 @@ exports.getStudentMetrics = asyncHandler(async (req, res) => {
             activityScore: Math.floor(Math.random() * 50 + 50),
         }
     });
+});
+
+// POST /api/faculty/profile/request-update
+exports.createProfileRequest = asyncHandler(async (req, res) => {
+    const { type, newValue } = req.body; // type: 'email' or 'password'
+    
+    if (!type) return res.status(400).json({ message: 'Request type is required' });
+
+    // Check if there's already a pending request of this type
+    const existing = await ProfileRequest.findOne({ faculty: req.user.userId, type, status: 'pending' });
+    if (existing) return res.status(400).json({ message: `A pending ${type} update request already exists.` });
+
+    const request = await ProfileRequest.create({
+        faculty: req.user.userId,
+        type,
+        newValue: type === 'email' ? newValue : null,
+        status: 'pending'
+    });
+
+    await logAction(req, `Requested ${type} Update`, `Faculty: ${req.user.userName}`);
+    res.status(201).json({ message: 'Request submitted to admin for approval', request });
 });

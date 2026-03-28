@@ -26,5 +26,6 @@ router.get('/batches', facultyController.getBatches);
 // Students
 router.get('/students', facultyController.getStudents);
 router.get('/students/:id/metrics', facultyController.getStudentMetrics);
+router.post('/profile/request-update', facultyController.createProfileRequest);
 
 module.exports = router;
