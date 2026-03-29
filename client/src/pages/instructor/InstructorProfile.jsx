@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { User, Mail, Phone, MapPin, Camera, Save } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Camera, Save, Eye, EyeOff } from 'lucide-react';
 import axios from 'axios'; // We can add standard user update logic later, right now simulating view.
+import toast from 'react-hot-toast';
 
 const InstructorProfile = () => {
   const { user } = useAuth();
@@ -23,8 +24,30 @@ const InstructorProfile = () => {
         district: user.district || '',
         about: user.about || 'Dedicated instructor with a passion for teaching.'
       });
+      axios.get('/api/instructor/profile/update-request/pending', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+        .then(res => setPendingReq(res.data))
+        .catch(err => console.error(err));
     }
   }, [user]);
+
+  const [pendingReq, setPendingReq] = useState(null);
+  const [credForm, setCredForm] = useState({ requestedEmail: '', requestedPassword: '' });
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleCredentialSubmit = async (e) => {
+    e.preventDefault();
+    if (!credForm.requestedEmail && !credForm.requestedPassword) {
+      return toast.error("Please enter a new email or password.");
+    }
+    try {
+      const res = await axios.post('/api/instructor/profile/update-request', credForm, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+      setPendingReq(res.data);
+      setCredForm({ requestedEmail: '', requestedPassword: '' });
+      toast.success('Approval request submitted to admin.');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Error submitting request');
+    }
+  };
 
   const handleChange = (e) => {
     setProfileData({ ...profileData, [e.target.name]: e.target.value });
@@ -119,6 +142,44 @@ const InstructorProfile = () => {
           </form>
         </div>
       </div>
+
+      {/* Security & Credentials Area */}
+      <div style={{ background: 'white', borderRadius: '16px', border: '1px solid var(--color-border)', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.02)', marginTop: '24px', padding: '32px' }}>
+        <h3 style={{ margin: '0 0 16px 0', fontSize: '18px' }}>Security & Credentials</h3>
+        <p style={{ color: 'var(--color-text-secondary)', marginBottom: '24px', fontSize: '14px' }}>
+          Changes to your email or password require <strong>Admin approval</strong>. You may only request changes up to 3 times per week.
+        </p>
+        
+        {pendingReq ? (
+          <div style={{ background: '#fef3c7', padding: '16px', borderRadius: '8px', borderLeft: '4px solid #f59e0b', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '20px' }}>⏳</span>
+            <div>
+              <p style={{ margin: '0 0 4px 0', fontWeight: 'bold', color: '#92400e' }}>Request Pending Admin Approval</p>
+              <p style={{ margin: '0', fontSize: '14px', color: '#b45309' }}>You have requested a credentials update. Please wait for the admin to approve or reject it.</p>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleCredentialSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--color-text-secondary)' }}>New Email (Optional)</label>
+              <input type="email" value={credForm.requestedEmail} onChange={e => setCredForm({...credForm, requestedEmail: e.target.value})} placeholder="e.g. newemail@example.com" style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '14px' }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--color-text-secondary)' }}>New Password (Optional)</label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input type={showPassword ? "text" : "password"} value={credForm.requestedPassword} onChange={e => setCredForm({...credForm, requestedPassword: e.target.value})} placeholder="••••••••" style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '14px', paddingRight: '40px' }} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+            <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end' }}>
+              <button type="submit" className="btn btn-primary" style={{ padding: '10px 24px' }}>Request Approval</button>
+            </div>
+          </form>
+        )}
+      </div>
+
     </div>
   );
 };

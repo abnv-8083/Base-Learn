@@ -5,14 +5,13 @@ import axios from 'axios';
 
 const AdminFacultyDetails = () => {
   const { id } = useParams();
-  const token = localStorage.getItem('token');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDetails = async () => {
       try {
-        const res = await axios.get(`/api/admin/faculty/${id}/details`, { headers: { Authorization: `Bearer ${token}` } });
+        const res = await axios.get(`/api/admin/faculty/${id}/details`);
         setData(res.data);
       } catch (err) {
         console.error('Failed to fetch faculty details', err);
@@ -21,12 +20,14 @@ const AdminFacultyDetails = () => {
       }
     };
     fetchDetails();
-  }, [id, token]);
+  }, [id]);
 
   if (loading) return <div className="spinner" style={{ display: 'block', margin: '15vh auto' }}></div>;
   if (!data) return <div style={{ textAlign: 'center', padding: '60px', color: 'var(--color-text-secondary)' }}>Failed to load faculty details.</div>;
 
-  const { faculty, stats, recentClasses } = data;
+  const { faculty, stats, recentClasses, assignedSubjects = [] } = data;
+
+  const gradeColors = { 'Class 10': '#6366f1', 'Class 9': '#10b981', 'Class 8': '#f59e0b' };
 
   return (
     <div style={{ paddingBottom: '60px' }}>
@@ -111,6 +112,25 @@ const AdminFacultyDetails = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Assigned Subjects */}
+      <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px' }}>Assigned Subjects</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+        {assignedSubjects.length === 0 ? (
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', background: 'white', borderRadius: '12px', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)' }}>
+            No subjects have been assigned to this faculty yet.
+          </div>
+        ) : assignedSubjects.map(sub => {
+          const color = gradeColors[sub.targetGrade] || '#6366f1';
+          return (
+            <div key={sub._id} style={{ background: 'white', borderRadius: '12px', border: `1px solid var(--color-border)`, padding: '20px', borderTop: `4px solid ${color}` }}>
+              <div style={{ fontSize: '11px', fontWeight: 'bold', color, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>{sub.targetGrade || 'All Grades'}</div>
+              <div style={{ fontSize: '17px', fontWeight: 'bold', marginBottom: '8px', color: 'var(--color-text-primary)' }}>{sub.name}</div>
+              <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', lineHeight: '1.5' }}>{sub.description || 'No description provided.'}</div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Recent Classes Table */}

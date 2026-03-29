@@ -1,18 +1,34 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Search, Bell, LogOut, MessageSquare } from 'lucide-react';
+import { Search, Bell, LogOut, MessageSquare, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
+import { useEffect } from 'react';
 
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
 
-  const mockNotifications = [
-    { id: 1, text: "System Update: Video Pipeline is Active.", time: "10m ago" },
-    { id: 2, text: "Faculty member 'Dr. Smith' uploaded a new video.", time: "1h ago" }
-  ];
+  useEffect(() => {
+    if (user) {
+      axios.get('/api/auth/notifications', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+        .then(res => setNotifications(res.data))
+        .catch(err => console.error("Could not load notifications", err));
+    }
+  }, [user]);
+
+  const dismissNotification = async (e, id) => {
+    e.stopPropagation();
+    try {
+      await axios.delete(`/api/auth/notifications/${id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+      setNotifications(notifications.filter(n => n._id !== id));
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -49,7 +65,7 @@ const Navbar = () => {
         <div style={{ position: 'relative' }}>
           <button className="icon-btn" onClick={() => setShowNotifications(!showNotifications)}>
             <Bell size={18} />
-            <span className="notification-dot"></span>
+            {notifications.length > 0 && <span className="notification-dot"></span>}
           </button>
 
           {showNotifications && (
@@ -59,15 +75,22 @@ const Navbar = () => {
                  <span style={{ fontSize: '12px', color: 'var(--color-primary)', cursor: 'pointer', fontWeight: 'bold' }}>Mark all read</span>
                </div>
                <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                 {mockNotifications.map(n => (
-                   <div key={n.id} style={{ padding: '16px', borderBottom: '1px solid var(--color-border)', display: 'flex', gap: '12px', alignItems: 'flex-start', cursor: 'pointer', transition: 'background 0.2s' }} className="nav-item">
-                     <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                 {notifications.length === 0 ? (
+                    <div style={{ padding: '24px', textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: '13px' }}>
+                      No new notifications
+                    </div>
+                 ) : notifications.map(n => (
+                   <div key={n._id} style={{ padding: '16px', borderBottom: '1px solid var(--color-border)', display: 'flex', gap: '12px', alignItems: 'center', cursor: 'pointer', transition: 'background 0.2s' }} className="nav-item">
+                     <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: n.type === 'alert' ? '#fee2e2' : 'var(--color-primary-light)', color: n.type === 'alert' ? '#dc2626' : 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                        <MessageSquare size={16} />
                      </div>
-                     <div>
-                       <div style={{ fontSize: '13px', color: 'var(--color-text-primary)', lineHeight: '1.4', marginBottom: '4px' }}>{n.text}</div>
-                       <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>{n.time}</div>
+                     <div style={{ flex: 1 }}>
+                       <div style={{ fontSize: '13px', color: 'var(--color-text-primary)', lineHeight: '1.4', marginBottom: '4px' }}>{n.message}</div>
+                       <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>{new Date(n.createdAt).toLocaleDateString()}</div>
                      </div>
+                     <button onClick={(e) => dismissNotification(e, n._id)} style={{ background: 'transparent', border: 'none', color: '#cbd5e1', cursor: 'pointer', padding: '8px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', flexShrink: 0 }} onMouseOver={(e) => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = '#fee2e2'; }} onMouseOut={(e) => { e.currentTarget.style.color = '#cbd5e1'; e.currentTarget.style.background = 'transparent'; }} title="Remove Notification">
+                       <Trash2 size={16} />
+                     </button>
                    </div>
                  ))}
                </div>

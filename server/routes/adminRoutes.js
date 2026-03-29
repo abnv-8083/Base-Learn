@@ -26,4 +26,9 @@ router.delete('/classes/:id', adminController.deleteClass);
 // Activity Log
 router.get('/activity-logs', adminController.getActivityLogs);
 
+// Profile Requests
+router.get('/profile-requests', adminController.getProfileRequests);
+router.put('/profile-requests/:id/approve', adminController.approveProfileRequest);
+router.put('/profile-requests/:id/reject', adminController.rejectProfileRequest);
+
 module.exports = router;

@@ -7,6 +7,8 @@ const StudyClass = require('../models/StudyClass');
 const Subject = require('../models/Subject');
 const Batch = require('../models/Batch');
 const ActivityLog = require('../models/ActivityLog');
+const ProfileUpdateRequest = require('../models/ProfileUpdateRequest');
+const Notification = require('../models/Notification');
 const logAction = require('../utils/logAction');
 const sendEmail = require('../utils/sendEmail');
 
@@ -106,6 +108,13 @@ exports.createUser = asyncHandler(async (req, res) => {
                             <p style="margin: 4px 0; color: #475569;"><strong>Email:</strong> ${email}</p>
                             <p style="margin: 4px 0; color: #475569;"><strong>Role:</strong> ${role}</p>
                             ${detailsHtml}
+                        </div>
+
+                        <!-- ADMIN DETAILS BOX -->
+                        <div style="margin: 20px 0; padding: 16px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px;">
+                            <h3 style="color: #1e293b; margin: 0 0 12px 0; font-size: 15px;">👤 Added By</h3>
+                            <p style="margin: 4px 0; color: #475569;"><strong>Admin Name:</strong> ${req.user.name}</p>
+                            <p style="margin: 4px 0; color: #475569;"><strong>Admin Email:</strong> ${req.user.email}</p>
                         </div>
 
                         <p style="color: #ef4444; font-size: 13px; border-left: 3px solid #ef4444; padding-left: 10px;">⚠️ For your security, please change your password immediately after your first login.</p>
@@ -227,9 +236,98 @@ exports.getClassDetails = asyncHandler(async (req, res) => {
     });
 });
 
+// GET /api/admin/faculty/:id/details
+exports.getFacultyDetails = asyncHandler(async (req, res) => {
+    const faculty = await Faculty.findById(req.params.id).select('-password');
+    if (!faculty) return res.status(404).json({ message: 'Faculty not found' });
+
+    const [liveClasses, assignedSubjects] = await Promise.all([
+        LiveClass.find({ faculty: faculty._id }).sort({ createdAt: -1 }).lean(),
+        Subject.find({ instructor: faculty._id }).lean()
+    ]);
+
+    const completedClasses = liveClasses.filter(c => c.status === 'completed');
+    const subjectsSet = new Set(liveClasses.map(c => c.subject));
+    
+    let totalStudentsReached = 0;
+    liveClasses.forEach(c => {
+        if (c.attendance && Array.isArray(c.attendance)) {
+            totalStudentsReached += c.attendance.filter(a => a.attended).length;
+        }
+    });
+
+    res.status(200).json({
+        faculty,
+        assignedSubjects,
+        stats: {
+            totalClasses: liveClasses.length,
+            completedClasses: completedClasses.length,
+            subjectsTaught: Array.from(subjectsSet),
+            totalStudentsReached
+        },
+        recentClasses: liveClasses.slice(0, 10)
+    });
+});
+
 exports.getActivityLogs = asyncHandler(async (req, res) => {
     const { role } = req.query;
     const filter = role && role !== 'all' ? { actorRole: role } : {};
     const logs = await ActivityLog.find(filter).sort({ createdAt: -1 }).limit(100);
     res.status(200).json(logs);
+});
+
+// --- Profile Update Requests --- //
+
+exports.getProfileRequests = asyncHandler(async (req, res) => {
+    const requests = await ProfileUpdateRequest.find({ status: 'pending' })
+        .populate('userId', 'name email role')
+        .sort({ createdAt: -1 });
+    res.status(200).json(requests);
+});
+
+exports.approveProfileRequest = asyncHandler(async (req, res) => {
+    const request = await ProfileUpdateRequest.findById(req.params.id);
+    if (!request) return res.status(404).json({ message: 'Request not found' });
+    if (request.status !== 'pending') return res.status(400).json({ message: 'Request is no longer pending' });
+
+    const Model = getModelByRole(request.userModel.toLowerCase());
+    if (!Model) return res.status(400).json({ message: 'Invalid user model' });
+
+    const user = await Model.findById(request.userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (request.requestedEmail) user.email = request.requestedEmail;
+    if (request.requestedPassword) user.password = request.requestedPassword;
+    
+    await user.save(); // Triggers pre-save hooks
+    
+    request.status = 'approved';
+    await request.save();
+
+    await Notification.create({
+        message: 'Your profile update request has been approved.',
+        type: 'info',
+        recipient: user._id.toString(),
+        sender: req.user.userId
+    });
+
+    await logAction(req, 'Approved Profile Request', `User: ${user.name}`, { targetId: user._id, targetModel: request.userModel });
+
+    res.status(200).json({ message: 'Profile updated successfully', request });
+});
+
+exports.rejectProfileRequest = asyncHandler(async (req, res) => {
+    const request = await ProfileUpdateRequest.findByIdAndUpdate(req.params.id, { status: 'rejected' }, { new: true });
+    if (!request) return res.status(404).json({ message: 'Request not found' });
+
+    await Notification.create({
+        message: 'Your profile update request has been rejected.',
+        type: 'alert',
+        recipient: request.userId.toString(),
+        sender: req.user.userId
+    });
+
+    await logAction(req, 'Rejected Profile Request', `Request ID: ${request._id}`, { targetId: request._id, targetModel: 'ProfileUpdateRequest' });
+
+    res.status(200).json({ message: 'Request rejected', request });
 });
