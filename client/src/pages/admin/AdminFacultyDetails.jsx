@@ -5,7 +5,6 @@ import axios from 'axios';
 
 const AdminFacultyDetails = () => {
   const { id } = useParams();
-  const token = localStorage.getItem('token');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -23,7 +22,7 @@ const AdminFacultyDetails = () => {
 
   useEffect(() => {
     fetchDetails();
-  }, [id, token]);
+  }, [id]);
 
   const handleApproveRequest = async (requestId, action) => {
     if (action === 'reject' && !window.confirm('Reject this request?')) return;

@@ -79,4 +79,8 @@ router.post('/notifications', instructorController.sendNotification);
 router.get('/assignments', instructorController.getAssignments);
 router.patch('/assignments/:id/distribute', instructorController.distributeAssignment);
 
+// Profile Update Requests
+router.post('/profile/update-request', instructorController.requestProfileUpdate);
+router.get('/profile/update-request/pending', instructorController.getPendingProfileRequest);
+
 module.exports = router;

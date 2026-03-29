@@ -8,6 +8,7 @@ import {
   BarChart2,
   CreditCard,
   Shield,
+  ShieldAlert,
   ClipboardList
 } from 'lucide-react';
 
@@ -46,6 +47,13 @@ const AdminSidebar = () => {
         <Link to="/admin/instructors" className={getLinkClass('/instructors')}>
           <Shield className="nav-item-icon" />
           Instructors
+        </Link>
+
+        <span className="sidebar-section-label" style={{ marginTop: 16 }}>Approvals</span>
+
+        <Link to="/admin/requests" className={getLinkClass('/requests')}>
+          <ShieldAlert className="nav-item-icon" />
+          Profile Requests
         </Link>
 
         <span className="sidebar-section-label" style={{ marginTop: 16 }}>Platform</span>

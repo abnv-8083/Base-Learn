@@ -112,6 +112,13 @@ exports.createUser = asyncHandler(async (req, res) => {
                             ${detailsHtml}
                         </div>
 
+                        <!-- ADMIN DETAILS BOX -->
+                        <div style="margin: 20px 0; padding: 16px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px;">
+                            <h3 style="color: #1e293b; margin: 0 0 12px 0; font-size: 15px;">👤 Added By</h3>
+                            <p style="margin: 4px 0; color: #475569;"><strong>Admin Name:</strong> ${req.user.name}</p>
+                            <p style="margin: 4px 0; color: #475569;"><strong>Admin Email:</strong> ${req.user.email}</p>
+                        </div>
+
                         <p style="color: #ef4444; font-size: 13px; border-left: 3px solid #ef4444; padding-left: 10px;">⚠️ For your security, please change your password immediately after your first login.</p>
 
                         <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
@@ -228,6 +235,39 @@ exports.getClassDetails = asyncHandler(async (req, res) => {
         studyClass,
         batches: result,
         totalStudents: result.reduce((acc, b) => acc + b.studentCount, 0)
+    });
+});
+
+// GET /api/admin/faculty/:id/details
+exports.getFacultyDetails = asyncHandler(async (req, res) => {
+    const faculty = await Faculty.findById(req.params.id).select('-password');
+    if (!faculty) return res.status(404).json({ message: 'Faculty not found' });
+
+    const [liveClasses, assignedSubjects] = await Promise.all([
+        LiveClass.find({ faculty: faculty._id }).sort({ createdAt: -1 }).lean(),
+        Subject.find({ instructor: faculty._id }).lean()
+    ]);
+
+    const completedClasses = liveClasses.filter(c => c.status === 'completed');
+    const subjectsSet = new Set(liveClasses.map(c => c.subject));
+    
+    let totalStudentsReached = 0;
+    liveClasses.forEach(c => {
+        if (c.attendance && Array.isArray(c.attendance)) {
+            totalStudentsReached += c.attendance.filter(a => a.attended).length;
+        }
+    });
+
+    res.status(200).json({
+        faculty,
+        assignedSubjects,
+        stats: {
+            totalClasses: liveClasses.length,
+            completedClasses: completedClasses.length,
+            subjectsTaught: Array.from(subjectsSet),
+            totalStudentsReached
+        },
+        recentClasses: liveClasses.slice(0, 10)
     });
 });
 

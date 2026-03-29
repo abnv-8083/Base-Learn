@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import { Toaster } from 'react-hot-toast';
 
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -69,6 +70,7 @@ const ProtectedRoute = ({ children, requiredRole }) => {
 const App = () => {
   return (
     <Router>
+      <Toaster position="top-right" />
       <Routes>
         {/* Public Auth Routes */}
         <Route path="/login/*" element={<Login />} />
@@ -109,6 +111,7 @@ const App = () => {
                 <Route path="analytics" element={<AdminAnalytics />} />
                 <Route path="payments" element={<AdminAnalytics />} />
                 <Route path="activity-log" element={<AdminActivityLog />} />
+                <Route path="requests" element={<AdminRequests />} />
                 <Route index element={<Navigate to="dashboard" replace />} />
               </Route>
             </Routes>

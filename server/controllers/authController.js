@@ -2,6 +2,7 @@ const Admin = require('../models/Admin');
 const Instructor = require('../models/Instructor');
 const Faculty = require('../models/Faculty');
 const Student = require('../models/Student');
+const Notification = require('../models/Notification');
 const jwt = require('jsonwebtoken');
 const sendEmail = require('../utils/sendEmail');
 
@@ -208,4 +209,36 @@ const getMe = async (req, res) => {
     }
 };
 
-module.exports = { registerUser, loginUser, getMe, verifyOTP };
+const getNotifications = async (req, res) => {
+    try {
+        const notifications = await Notification.find({
+            $and: [
+                {
+                    $or: [
+                        { recipient: req.user.userId.toString() },
+                        { recipient: 'all' },
+                        ...(req.user.role === 'admin' ? [{ recipient: 'all_admins' }] : [])
+                    ]
+                },
+                { dismissedBy: { $ne: req.user.userId } }
+            ]
+        }).sort({ createdAt: -1 }).limit(20);
+        res.status(200).json(notifications);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching notifications' });
+    }
+};
+
+const dismissNotification = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await Notification.findByIdAndUpdate(id, {
+            $addToSet: { dismissedBy: req.user.userId }
+        });
+        res.status(200).json({ message: 'Notification dismissed' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error dismissing notification' });
+    }
+};
+
+module.exports = { registerUser, loginUser, getMe, verifyOTP, getNotifications, dismissNotification };

@@ -9,6 +9,7 @@ const Test = require('../models/Test');
 const StudyClass = require('../models/StudyClass');
 const Subject = require('../models/Subject');
 const Chapter = require('../models/Chapter');
+const ProfileUpdateRequest = require('../models/ProfileUpdateRequest');
 const logAction = require('../utils/logAction');
 
 // Get Instructor Dashboard Stats
@@ -468,5 +469,61 @@ exports.distributeAssignment = async (req, res) => {
         res.status(200).json(updatedAssignment);
     } catch (error) {
         res.status(500).json({ message: 'Error distributing assignment', error: error.message });
+    }
+};
+
+// --- Profile Update Requests --- //
+
+exports.requestProfileUpdate = async (req, res) => {
+    try {
+        const { requestedEmail, requestedPassword } = req.body;
+        
+        if (!requestedEmail && !requestedPassword) {
+            return res.status(400).json({ message: 'No changes submitted.' });
+        }
+
+        const pending = await ProfileUpdateRequest.findOne({ userId: req.user.userId, status: 'pending' });
+        if (pending) {
+            return res.status(400).json({ message: 'You already have a pending profile update request.' });
+        }
+
+        const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const recentRequests = await ProfileUpdateRequest.countDocuments({ 
+            userId: req.user.userId, 
+            createdAt: { $gte: oneWeekAgo } 
+        });
+
+        if (recentRequests >= 3) {
+            return res.status(400).json({ message: 'You have reached the maximum limit of 3 profile update requests per week.' });
+        }
+
+        const request = new ProfileUpdateRequest({
+            userId: req.user.userId,
+            userModel: req.user.role.charAt(0).toUpperCase() + req.user.role.slice(1),
+            requestedEmail,
+            requestedPassword
+        });
+
+        await request.save();
+
+        await Notification.create({
+            message: `New profile update requested by ${req.user.name || 'Instructor'} (${req.user.role})`,
+            type: 'alert',
+            recipient: 'all_admins',
+            sender: req.user.userId
+        });
+
+        res.status(201).json(request);
+    } catch (error) {
+        res.status(500).json({ message: 'Error submitting profile update request', error: error.message });
+    }
+};
+
+exports.getPendingProfileRequest = async (req, res) => {
+    try {
+        const pending = await ProfileUpdateRequest.findOne({ userId: req.user.userId, status: 'pending' });
+        res.status(200).json(pending || null);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching pending request', error: error.message });
     }
 };
