@@ -65,9 +65,10 @@ const AdminRequests = () => {
                 </div>
                 
                 <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'inline-block' }}>
-                  <p style={{ margin: '0 0 4px 0', fontSize: '13px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Requested Changes:</p>
-                  {req.requestedEmail && <p style={{ margin: '4px 0 0 0', fontSize: '14px' }}><strong>New Email:</strong> {req.requestedEmail}</p>}
-                  {req.requestedPassword && <p style={{ margin: '4px 0 0 0', fontSize: '14px' }}><strong>New Password:</strong> •••••••• (Hidden securely)</p>}
+                  <p style={{ margin: '0 0 4px 0', fontSize: '13px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Requested Change:</p>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '14px' }}>
+                    <strong>New {req.type.charAt(0).toUpperCase() + req.type.slice(1)}:</strong> {req.type === 'password' ? '•••••••• (Hidden securely)' : req.newValue}
+                  </p>
                 </div>
               </div>
               

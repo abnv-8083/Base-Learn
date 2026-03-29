@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Search, X, Eye, EyeOff, ExternalLink } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Search, X, Eye, EyeOff, ExternalLink, Upload } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
 const ROLE_CONFIG = {
-  student: { label: 'Students', singular: 'Student', color: '#6366f1', fields: ['name', 'email', 'phone', 'studentClass', 'district', 'parentName', 'parentPhone', 'school'] },
-  faculty: { label: 'Faculty', singular: 'Faculty', color: '#10b981', fields: ['name', 'email', 'phone', 'district'] },
-  instructor: { label: 'Instructors', singular: 'Instructor', color: '#f59e0b', fields: ['name', 'email', 'phone'] },
+  student: { label: 'Students', singular: 'Student', color: '#6366f1', fields: ['name', 'email', 'phone', 'studentClass', 'district', 'parentName', 'parentPhone', 'school', 'profilePhoto'] },
+  faculty: { label: 'Faculty', singular: 'Faculty', color: '#10b981', fields: ['name', 'email', 'phone', 'district', 'experience', 'qualification', 'profilePhoto'] },
+  instructor: { label: 'Instructors', singular: 'Instructor', color: '#f59e0b', fields: ['name', 'email', 'phone', 'experience', 'qualification', 'profilePhoto'] },
 };
 
 const AdminUserManagement = ({ role }) => {
@@ -24,6 +24,7 @@ const AdminUserManagement = ({ role }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [deleteConfirmUser, setDeleteConfirmUser] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => { fetchUsers(); }, [role]);
 
@@ -39,6 +40,7 @@ const AdminUserManagement = ({ role }) => {
     const empty = {};
     config.fields.forEach(f => { empty[f] = ''; });
     empty.password = '';
+    if (role !== 'student') empty.teachingMode = 'online';
     setForm(empty);
     setErrors({});
     setEditingUser(null);
@@ -48,6 +50,7 @@ const AdminUserManagement = ({ role }) => {
   const openEdit = (user) => {
     const filled = {};
     config.fields.forEach(f => { filled[f] = user[f] || ''; });
+    if (role !== 'student') filled.teachingMode = user.teachingMode || 'online';
     setForm(filled);
     setErrors({});
     setEditingUser(user);
@@ -127,6 +130,37 @@ const AdminUserManagement = ({ role }) => {
     }
   };
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    setUploading(true);
+    try {
+      const res = await axios.post('/api/admin/upload-image', formData, {
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}` 
+        }
+      });
+      setForm({ ...form, profilePhoto: res.data.url });
+      if (errors.profilePhoto) setErrors({ ...errors, profilePhoto: null });
+      toast.success('Image uploaded successfully');
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || 'Failed to upload image');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const fieldLabel = (f) => f.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
 
   const filtered = users.filter(u =>
@@ -161,6 +195,7 @@ const AdminUserManagement = ({ role }) => {
                 <th style={{ padding: '12px 20px', textAlign: 'left', fontWeight: '600' }}>Name</th>
                 <th style={{ padding: '12px 20px', textAlign: 'left', fontWeight: '600' }}>Email</th>
                 {role === 'student' && <th style={{ padding: '12px 20px', textAlign: 'center', fontWeight: '600' }}>Class</th>}
+                {role !== 'student' && <th style={{ padding: '12px 20px', textAlign: 'center', fontWeight: '600' }}>Mode</th>}
                 <th style={{ padding: '12px 20px', textAlign: 'center', fontWeight: '600' }}>Status</th>
                 <th style={{ padding: '12px 20px', textAlign: 'center', fontWeight: '600' }}>Actions</th>
               </tr>
@@ -180,15 +215,32 @@ const AdminUserManagement = ({ role }) => {
                       {role === 'faculty' ? (
                         <span
                           onClick={() => navigate(`/admin/faculty/${u._id}`)}
-                          style={{ fontWeight: '600', fontSize: '14px', color: '#10b981', cursor: 'pointer', textDecoration: 'underline' }}
+                          style={{ fontWeight: '600', fontSize: '14px', color: 'var(--color-text-primary)', cursor: 'pointer' }}
+                        >{u.name}</span>
+                      ) : role === 'student' ? (
+                        <span
+                          onClick={() => navigate(`/admin/students/${u._id}`)}
+                          style={{ fontWeight: '600', fontSize: '14px', color: 'var(--color-text-primary)', cursor: 'pointer' }}
+                        >{u.name}</span>
+                      ) : role === 'instructor' ? (
+                        <span
+                          onClick={() => navigate(`/admin/instructors/${u._id}`)}
+                          style={{ fontWeight: '600', fontSize: '14px', color: 'var(--color-text-primary)', cursor: 'pointer' }}
                         >{u.name}</span>
                       ) : (
-                        <span style={{ fontWeight: '600', fontSize: '14px' }}>{u.name}</span>
+                        <span style={{ fontWeight: '600', fontSize: '14px', color: 'var(--color-text-primary)' }}>{u.name}</span>
                       )}
                     </div>
                   </td>
                   <td style={{ padding: '14px 20px', color: 'var(--color-text-secondary)', fontSize: '14px' }}>{u.email}</td>
                   {role === 'student' && <td style={{ padding: '14px 20px', textAlign: 'center', fontSize: '13px' }}>{u.studentClass || '—'}</td>}
+                  {role !== 'student' && (
+                    <td style={{ padding: '14px 20px', textAlign: 'center' }}>
+                      <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', background: u.teachingMode === 'offline' ? '#f3e8ff' : u.teachingMode === 'hybrid' ? '#ffedd5' : '#e0f2fe', color: u.teachingMode === 'offline' ? '#7e22ce' : u.teachingMode === 'hybrid' ? '#c2410c' : '#0369a1', textTransform: 'capitalize' }}>
+                        {u.teachingMode || 'Online'}
+                      </span>
+                    </td>
+                  )}
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}>
                     <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', background: u.isActive ? '#dcfce7' : '#fee2e2', color: u.isActive ? '#166534' : '#991b1b' }}>
                       {u.isActive ? 'Active' : 'Blocked'}
@@ -227,11 +279,42 @@ const AdminUserManagement = ({ role }) => {
               {config.fields.map(f => (
                 <div key={f}>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '13px' }}>{fieldLabel(f)}</label>
-                  <input type="text" value={form[f] || ''} onChange={e => { setForm({ ...form, [f]: e.target.value }); if(errors[f]) setErrors({...errors, [f]: null}); }}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: errors[f] ? '1px solid #ef4444' : '1px solid var(--color-border)', fontSize: '14px' }} />
+                  {f === 'profilePhoto' ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ width: '50px', height: '50px', borderRadius: '8px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                        {form.profilePhoto ? <img src={form.profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Upload size={20} color="var(--color-text-secondary)" />}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} id="photo-upload" disabled={uploading} />
+                        <label htmlFor="photo-upload" style={{ display: 'inline-flex', padding: '8px 16px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '6px', fontSize: '13px', fontWeight: '500', cursor: uploading ? 'not-allowed' : 'pointer', color: 'var(--color-text-primary)' }}>
+                          {uploading ? 'Uploading...' : 'Choose File'}
+                        </label>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>Max 5MB (JPG, PNG, WEBP)</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <input type="text" value={form[f] || ''} onChange={e => { setForm({ ...form, [f]: e.target.value }); if(errors[f]) setErrors({...errors, [f]: null}); }}
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: errors[f] ? '1px solid #ef4444' : '1px solid var(--color-border)', fontSize: '14px' }} />
+                  )}
                   {errors[f] && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors[f]}</span>}
                 </div>
               ))}
+              
+              {role !== 'student' && (
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '13px' }}>Teaching Mode</label>
+                  <select
+                    value={form.teachingMode || 'online'}
+                    onChange={e => setForm({ ...form, teachingMode: e.target.value })}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '14px', backgroundColor: 'white' }}
+                  >
+                    <option value="online">Online</option>
+                    <option value="offline">Offline</option>
+                    <option value="hybrid">Hybrid</option>
+                  </select>
+                </div>
+              )}
+
               {!editingUser && (
                 <div>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '13px' }}>Password *</label>

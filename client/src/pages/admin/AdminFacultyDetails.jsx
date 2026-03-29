@@ -8,6 +8,7 @@ const AdminFacultyDetails = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const token = localStorage.getItem('token');
 
   const fetchDetails = async () => {
     try {

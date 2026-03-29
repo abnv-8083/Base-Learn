@@ -393,11 +393,14 @@ exports.updateStudent = async (req, res) => {
 
 exports.toggleStudentStatus = async (req, res) => {
     try {
+        const student = await Student.findById(req.params.id);
+        if (!student) return res.status(404).json({ message: 'Student not found' });
+
         student.isActive = !student.isActive;
         const updatedStudent = await student.save();
         
         const action = updatedStudent.isActive ? 'Activated Student' : 'Blocked Student';
-        await logAction(req, 'Toggled Student Status', `Student: ${updatedStudent.name}`, { targetId: updatedStudent._id, targetModel: 'Student', details: { isActive: updatedStudent.isActive } });
+        await logAction(req, action, `Student: ${updatedStudent.name}`, { targetId: updatedStudent._id, targetModel: 'Student', details: { isActive: updatedStudent.isActive } });
 
         res.json({ message: updatedStudent.isActive ? 'Student unblocked' : 'Student blocked', isActive: updatedStudent.isActive });
     } catch (error) {
@@ -476,10 +479,14 @@ exports.distributeAssignment = async (req, res) => {
 
 exports.requestProfileUpdate = async (req, res) => {
     try {
-        const { requestedEmail, requestedPassword } = req.body;
+        const { type, newValue } = req.body;
         
-        if (!requestedEmail && !requestedPassword) {
-            return res.status(400).json({ message: 'No changes submitted.' });
+        if (!['email', 'password'].includes(type)) {
+            return res.status(400).json({ message: 'Invalid request type.' });
+        }
+
+        if (!newValue) {
+            return res.status(400).json({ message: 'New value is required.' });
         }
 
         const pending = await ProfileUpdateRequest.findOne({ userId: req.user.userId, status: 'pending' });
@@ -500,8 +507,8 @@ exports.requestProfileUpdate = async (req, res) => {
         const request = new ProfileUpdateRequest({
             userId: req.user.userId,
             userModel: req.user.role.charAt(0).toUpperCase() + req.user.role.slice(1),
-            requestedEmail,
-            requestedPassword
+            type,
+            newValue
         });
 
         await request.save();

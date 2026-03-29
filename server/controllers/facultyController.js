@@ -252,3 +252,40 @@ exports.updateProfile = asyncHandler(async (req, res) => {
         role: updatedFaculty.role
     });
 });
+
+// POST /api/faculty/profile/request-update
+exports.createProfileRequest = asyncHandler(async (req, res) => {
+    const { type, newValue } = req.body;
+    
+    if (!['email', 'password'].includes(type)) {
+        return res.status(400).json({ message: 'Invalid request type. Must be email or password.' });
+    }
+
+    if (!newValue) {
+        return res.status(400).json({ message: 'New value is required' });
+    }
+
+    const ProfileUpdateRequest = require('../models/ProfileUpdateRequest');
+    
+    // Check for existing pending request
+    const existing = await ProfileUpdateRequest.findOne({ 
+        userId: req.user.userId, 
+        status: 'pending',
+        type: type 
+    });
+
+    if (existing) {
+        return res.status(400).json({ message: `You already have a pending ${type} update request.` });
+    }
+
+    const request = await ProfileUpdateRequest.create({
+        userId: req.user.userId,
+        userModel: 'Faculty',
+        type,
+        newValue,
+        status: 'pending'
+    });
+
+    await logAction(req, 'Created Profile Update Request', `${type} -> ${newValue}`);
+    res.status(201).json({ message: 'Request submitted successfully', request });
+});

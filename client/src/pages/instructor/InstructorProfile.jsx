@@ -31,18 +31,18 @@ const InstructorProfile = () => {
   }, [user]);
 
   const [pendingReq, setPendingReq] = useState(null);
-  const [credForm, setCredForm] = useState({ requestedEmail: '', requestedPassword: '' });
+  const [credForm, setCredForm] = useState({ type: 'email', newValue: '' });
   const [showPassword, setShowPassword] = useState(false);
 
   const handleCredentialSubmit = async (e) => {
     e.preventDefault();
-    if (!credForm.requestedEmail && !credForm.requestedPassword) {
-      return toast.error("Please enter a new email or password.");
+    if (!credForm.newValue) {
+      return toast.error(`Please enter a new ${credForm.type}.`);
     }
     try {
       const res = await axios.post('/api/instructor/profile/update-request', credForm, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
       setPendingReq(res.data);
-      setCredForm({ requestedEmail: '', requestedPassword: '' });
+      setCredForm({ ...credForm, newValue: '' });
       toast.success('Approval request submitted to admin.');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Error submitting request');
@@ -161,16 +161,21 @@ const InstructorProfile = () => {
         ) : (
           <form onSubmit={handleCredentialSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--color-text-secondary)' }}>New Email (Optional)</label>
-              <input type="email" value={credForm.requestedEmail} onChange={e => setCredForm({...credForm, requestedEmail: e.target.value})} placeholder="e.g. newemail@example.com" style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '14px' }} />
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--color-text-secondary)' }}>Request Type</label>
+              <select value={credForm.type} onChange={e => setCredForm({...credForm, type: e.target.value, newValue: ''})} style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '14px' }}>
+                <option value="email">Change Email</option>
+                <option value="password">Reset Password</option>
+              </select>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--color-text-secondary)' }}>New Password (Optional)</label>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--color-text-secondary)' }}>New {credForm.type.charAt(0).toUpperCase() + credForm.type.slice(1)}</label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <input type={showPassword ? "text" : "password"} value={credForm.requestedPassword} onChange={e => setCredForm({...credForm, requestedPassword: e.target.value})} placeholder="••••••••" style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '14px', paddingRight: '40px' }} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+                <input type={credForm.type === 'password' && !showPassword ? "password" : "text"} value={credForm.newValue} onChange={e => setCredForm({...credForm, newValue: e.target.value})} placeholder={credForm.type === 'email' ? "e.g. newemail@example.com" : "••••••••"} style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '14px', paddingRight: credForm.type === 'password' ? '40px' : '16px' }} />
+                {credForm.type === 'password' && (
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                )}
               </div>
             </div>
             <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end' }}>
