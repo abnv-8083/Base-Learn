@@ -212,23 +212,43 @@ exports.getStudentMetrics = asyncHandler(async (req, res) => {
     });
 });
 
-// POST /api/faculty/profile/request-update
-exports.createProfileRequest = asyncHandler(async (req, res) => {
-    const { type, newValue } = req.body; // type: 'email' or 'password'
-    
-    if (!type) return res.status(400).json({ message: 'Request type is required' });
+// PUT /api/faculty/profile
+exports.updateProfile = asyncHandler(async (req, res) => {
+    const { name, phone, district, qualification, experience, specialization, about } = req.body;
+    const Faculty = require('../models/Faculty');
 
-    // Check if there's already a pending request of this type
-    const existing = await ProfileRequest.findOne({ faculty: req.user.userId, type, status: 'pending' });
-    if (existing) return res.status(400).json({ message: `A pending ${type} update request already exists.` });
+    // Basic server-side validation
+    if (!name || name.length < 3) {
+        return res.status(400).json({ message: 'Name must be at least 3 characters long' });
+    }
 
-    const request = await ProfileRequest.create({
-        faculty: req.user.userId,
-        type,
-        newValue: type === 'email' ? newValue : null,
-        status: 'pending'
+    const faculty = await Faculty.findById(req.user.userId);
+    if (!faculty) {
+        return res.status(404).json({ message: 'Faculty not found' });
+    }
+
+    // Update fields
+    faculty.name = name || faculty.name;
+    faculty.phone = phone || faculty.phone;
+    faculty.district = district || faculty.district;
+    faculty.qualification = qualification || faculty.qualification;
+    faculty.experience = experience || faculty.experience;
+    faculty.specialization = specialization || faculty.specialization;
+    faculty.about = about || faculty.about;
+
+    const updatedFaculty = await faculty.save();
+
+    res.status(200).json({
+        _id: updatedFaculty._id,
+        name: updatedFaculty.name,
+        email: updatedFaculty.email,
+        phone: updatedFaculty.phone,
+        district: updatedFaculty.district,
+        qualification: updatedFaculty.qualification,
+        experience: updatedFaculty.experience,
+        specialization: updatedFaculty.specialization,
+        about: updatedFaculty.about,
+        profilePhoto: updatedFaculty.profilePhoto,
+        role: updatedFaculty.role
     });
-
-    await logAction(req, `Requested ${type} Update`, `Faculty: ${req.user.userName}`);
-    res.status(201).json({ message: 'Request submitted to admin for approval', request });
 });
