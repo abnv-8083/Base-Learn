@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Search, X, Eye, EyeOff, ExternalLink } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Search, X, Eye, EyeOff, ExternalLink, Upload } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -24,6 +24,7 @@ const AdminUserManagement = ({ role }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [deleteConfirmUser, setDeleteConfirmUser] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => { fetchUsers(); }, [role]);
 
@@ -126,6 +127,37 @@ const AdminUserManagement = ({ role }) => {
       fetchUsers();
     } catch (err) {
       toast.error('Failed to update status.');
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    setUploading(true);
+    try {
+      const res = await axios.post('/api/admin/upload-image', formData, {
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}` 
+        }
+      });
+      setForm({ ...form, profilePhoto: res.data.url });
+      if (errors.profilePhoto) setErrors({ ...errors, profilePhoto: null });
+      toast.success('Image uploaded successfully');
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || 'Failed to upload image');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -247,8 +279,23 @@ const AdminUserManagement = ({ role }) => {
               {config.fields.map(f => (
                 <div key={f}>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '13px' }}>{fieldLabel(f)}</label>
-                  <input type="text" value={form[f] || ''} onChange={e => { setForm({ ...form, [f]: e.target.value }); if(errors[f]) setErrors({...errors, [f]: null}); }}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: errors[f] ? '1px solid #ef4444' : '1px solid var(--color-border)', fontSize: '14px' }} />
+                  {f === 'profilePhoto' ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ width: '50px', height: '50px', borderRadius: '8px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                        {form.profilePhoto ? <img src={form.profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Upload size={20} color="var(--color-text-secondary)" />}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} id="photo-upload" disabled={uploading} />
+                        <label htmlFor="photo-upload" style={{ display: 'inline-flex', padding: '8px 16px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '6px', fontSize: '13px', fontWeight: '500', cursor: uploading ? 'not-allowed' : 'pointer', color: 'var(--color-text-primary)' }}>
+                          {uploading ? 'Uploading...' : 'Choose File'}
+                        </label>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>Max 5MB (JPG, PNG, WEBP)</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <input type="text" value={form[f] || ''} onChange={e => { setForm({ ...form, [f]: e.target.value }); if(errors[f]) setErrors({...errors, [f]: null}); }}
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: errors[f] ? '1px solid #ef4444' : '1px solid var(--color-border)', fontSize: '14px' }} />
+                  )}
                   {errors[f] && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors[f]}</span>}
                 </div>
               ))}

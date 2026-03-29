@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { protect, authorizeRoles } = require('../middleware/authMiddleware');
 const adminController = require('../controllers/adminController');
+const { uploadImage } = require('../middleware/uploadMiddleware');
 
 router.use(protect);
 router.use(authorizeRoles('admin'));
@@ -34,8 +35,10 @@ router.put('/profile-requests/:id/approve', adminController.approveProfileReques
 router.put('/profile-requests/:id/reject', adminController.rejectProfileRequest);
 
 // User Details
-router.get('/faculty/:id/details', adminController.getFacultyDetails);
 router.get('/students/:id/details', adminController.getStudentDetails);
 router.get('/instructors/:id/details', adminController.getInstructorDetails);
+
+// Uploads
+router.post('/upload-image', uploadImage.single('image'), adminController.uploadImage);
 
 module.exports = router;

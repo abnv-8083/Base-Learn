@@ -149,11 +149,16 @@ const loginUser = async (req, res) => {
         let foundUser = null;
 
         if (role && roleModelMap[role]) {
+            console.log(`[AUTH] Login attempt for role: ${role}, email: ${email}`);
             // Priority: Search the specifically requested role model
             const Model = roleModelMap[role];
             const user = await Model.findOne({ $or: [{ email: email }, { phone: email }] });
+            if (!user) console.log(`[AUTH] User not found in ${role} model`);
             if (user && (await user.matchPassword(password))) {
+                console.log(`[AUTH] Success ! User found and password matches.`);
                 foundUser = user;
+            } else if (user) {
+                console.log(`[AUTH] User found but password match failed.`);
             }
         } else {
             // Fallback: search all (legacy behavior or unified login)

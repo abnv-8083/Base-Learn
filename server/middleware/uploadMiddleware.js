@@ -6,9 +6,11 @@ const fs = require('fs');
 // Ensure uploads directories exist
 const videoDir = path.join(__dirname, '..', 'public', 'uploads', 'videos');
 const documentDir = path.join(__dirname, '..', 'public', 'uploads', 'documents');
+const profileDir = path.join(__dirname, '..', 'public', 'uploads', 'profiles');
 
 if (!fs.existsSync(videoDir)) fs.mkdirSync(videoDir, { recursive: true });
 if (!fs.existsSync(documentDir)) fs.mkdirSync(documentDir, { recursive: true });
+if (!fs.existsSync(profileDir)) fs.mkdirSync(profileDir, { recursive: true });
 
 const createStorage = (targetDir) => multer.diskStorage({
   destination: (req, file, cb) => cb(null, targetDir),
@@ -31,10 +33,23 @@ const documentFilter = (req, file, cb) => {
   else cb(new Error('Only PDF documents allowed'), false);
 };
 
+const imageFilter = (req, file, cb) => {
+  const allowed = /jpg|jpeg|png|webp/i;
+  const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
+  if (allowed.test(ext)) cb(null, true);
+  else cb(new Error('Only image files (JPG, PNG, WEBP) allowed'), false);
+};
+
 const uploadVideo = multer({
   storage: createStorage(videoDir),
   fileFilter: videoFilter,
   limits: { fileSize: 2 * 1024 * 1024 * 1024 }
+});
+
+const uploadImage = multer({
+  storage: createStorage(profileDir),
+  fileFilter: imageFilter,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit for images
 });
 
 const upload = multer({
@@ -58,4 +73,4 @@ const upload = multer({
   limits: { fileSize: 2 * 1024 * 1024 * 1024 }
 });
 
-module.exports = { uploadVideo, upload };
+module.exports = { uploadVideo, upload, uploadImage };

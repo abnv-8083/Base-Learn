@@ -48,7 +48,7 @@ import AdminBatchManagement from './pages/admin/AdminBatchManagement';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminClassManagement from './pages/admin/AdminClassManagement';
 import AdminActivityLog from './pages/admin/AdminActivityLog';
-import AdminFacultyDetails from './pages/admin/AdminFacultyDetails';
+import AdminRequests from './pages/admin/AdminRequests';
 
 const ProtectedRoute = ({ children, requiredRole }) => {
   const { user, loading } = useAuth();

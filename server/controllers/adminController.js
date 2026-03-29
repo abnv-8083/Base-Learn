@@ -7,15 +7,10 @@ const StudyClass = require('../models/StudyClass');
 const Subject = require('../models/Subject');
 const Batch = require('../models/Batch');
 const ActivityLog = require('../models/ActivityLog');
-<<<<<<< HEAD
 const LiveClass = require('../models/LiveClass');
 const RecordedClass = require('../models/RecordedClass');
-const ProfileRequest = require('../models/ProfileRequest');
-=======
 const ProfileUpdateRequest = require('../models/ProfileUpdateRequest');
 const Notification = require('../models/Notification');
-const LiveClass = require('../models/LiveClass');
->>>>>>> 520dbd7 (feat: Implement Instructor Profile UI, Student records view and teaching mode classifications)
 const logAction = require('../utils/logAction');
 const sendEmail = require('../utils/sendEmail');
 const crypto = require('crypto');
@@ -244,38 +239,7 @@ exports.getClassDetails = asyncHandler(async (req, res) => {
     });
 });
 
-// GET /api/admin/faculty/:id/details
-exports.getFacultyDetails = asyncHandler(async (req, res) => {
-    const faculty = await Faculty.findById(req.params.id).select('-password');
-    if (!faculty) return res.status(404).json({ message: 'Faculty not found' });
 
-    const [liveClasses, assignedSubjects] = await Promise.all([
-        LiveClass.find({ faculty: faculty._id }).sort({ createdAt: -1 }).lean(),
-        Subject.find({ instructor: faculty._id }).lean()
-    ]);
-
-    const completedClasses = liveClasses.filter(c => c.status === 'completed');
-    const subjectsSet = new Set(liveClasses.map(c => c.subject));
-    
-    let totalStudentsReached = 0;
-    liveClasses.forEach(c => {
-        if (c.attendance && Array.isArray(c.attendance)) {
-            totalStudentsReached += c.attendance.filter(a => a.attended).length;
-        }
-    });
-
-    res.status(200).json({
-        faculty,
-        assignedSubjects,
-        stats: {
-            totalClasses: liveClasses.length,
-            completedClasses: completedClasses.length,
-            subjectsTaught: Array.from(subjectsSet),
-            totalStudentsReached
-        },
-        recentClasses: liveClasses.slice(0, 10)
-    });
-});
 
 // GET /api/admin/students/:id/details
 exports.getStudentDetails = asyncHandler(async (req, res) => {
@@ -318,6 +282,15 @@ exports.getInstructorDetails = asyncHandler(async (req, res) => {
     });
 });
 
+// POST /api/admin/upload-image
+exports.uploadImage = asyncHandler(async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+    }
+    const imageUrl = `/uploads/profiles/${req.file.filename}`;
+    res.status(200).json({ url: imageUrl });
+});
+
 exports.getActivityLogs = asyncHandler(async (req, res) => {
     const { role } = req.query;
     const filter = role && role !== 'all' ? { actorRole: role } : {};
@@ -351,7 +324,7 @@ exports.getFacultyDetails = asyncHandler(async (req, res) => {
         .limit(10);
 
     // 4. Pending Profile Requests
-    const pendingRequests = await ProfileRequest.find({ faculty: id, status: 'pending' });
+    const pendingRequests = await ProfileUpdateRequest.find({ faculty: id, status: 'pending' });
 
     res.status(200).json({
         faculty,
@@ -364,48 +337,74 @@ exports.getFacultyDetails = asyncHandler(async (req, res) => {
 
 // POST /api/admin/faculty/approve-request/:requestId
 exports.approveProfileRequest = asyncHandler(async (req, res) => {
-    const { requestId } = req.params;
-    const { action } = req.body; // 'approve' or 'reject'
+    const { id, requestId } = req.params;
+    const finalId = id || requestId;
+    console.log('--- Approving Request ---', { finalId, body: req.body, path: req.path });
+    
+    // Determine action from URL path if not in body
+    const action = req.body.action || (req.path.includes('reject') ? 'reject' : 'approve'); 
 
-    const request = await ProfileRequest.findById(requestId).populate('faculty');
+    const request = await ProfileUpdateRequest.findById(finalId).populate('userId');
+    console.log('Request found:', !!request);
+    if (!request) return res.status(404).json({ message: 'Request not found' });
+
+    console.log('User found:', !!request.userId);
+    if (!request.userId) return res.status(404).json({ message: 'User not found in request context' });
     if (!request) return res.status(404).json({ message: 'Request not found' });
 
     if (action === 'reject') {
         request.status = 'rejected';
         await request.save();
+
+        // Notify user about rejection
+        await Notification.create({
+            message: `Your ${request.type} update request has been rejected. ${req.body.adminComment ? `Reason: ${req.body.adminComment}` : ''}`,
+            type: 'alert',
+            recipient: request.userId._id ? request.userId._id.toString() : request.userId.toString(),
+            sender: req.user.userId
+        });
+
         return res.status(200).json({ message: 'Request rejected' });
     }
 
-    const { faculty, type, newValue } = request;
+    const { userId: user, type, newValue } = request;
 
     if (type === 'email') {
-        const oldEmail = faculty.email;
-        faculty.email = newValue;
-        await faculty.save();
+        const oldEmail = user.email;
+        user.email = newValue;
+        await user.save();
 
         // Notify new email
         try {
             await sendEmail({
                 email: newValue,
                 subject: 'Email Updated - Base Learn',
-                html: `<h1>Email Updated</h1><p>Your faculty account email has been updated to this address by Admin.</p>`
+                html: `<h1>Email Updated</h1><p>Your user account email has been updated to this address by Admin.</p>`
             });
         } catch (e) { console.error('Email fail:', e.message); }
 
         request.status = 'approved';
         await request.save();
-        await logAction(req, 'Approved Email Change', `Faculty: ${faculty.name} (${oldEmail} -> ${newValue})`);
+        await logAction(req, 'Approved Email Change', `Faculty: ${user.name} (${oldEmail} -> ${newValue})`);
+        
+        // Notify user about approval
+        await Notification.create({
+            message: `Your email update request to ${newValue} has been approved.`,
+            type: 'info',
+            recipient: user._id.toString(),
+            sender: req.user.userId
+        });
     }
 
     if (type === 'password') {
         const tempPassword = crypto.randomBytes(4).toString('hex'); // 8 char random hex
-        faculty.password = tempPassword;
-        await faculty.save();
+        user.password = tempPassword;
+        await user.save();
 
-        // Send temp password to faculty
+        // Send temp password to user
         try {
             await sendEmail({
-                email: faculty.email,
+                email: user.email,
                 subject: 'New Password Generated - Base Learn',
                 html: `<h1>Password Reset</h1><p>Your request for a password reset was approved. Your new temporary password is: <strong>${tempPassword}</strong></p><p>Please log in and change it immediately.</p>`
             });
@@ -413,8 +412,41 @@ exports.approveProfileRequest = asyncHandler(async (req, res) => {
 
         request.status = 'approved';
         await request.save();
-        await logAction(req, 'Approved Password Reset', `Faculty: ${faculty.name}`);
+        await logAction(req, 'Approved Password Reset', `Faculty: ${user.name}`);
+
+        // Notify user about approval
+        await Notification.create({
+            message: `Your ${type} update request has been approved.`,
+            type: 'info',
+            recipient: user._id.toString(),
+            sender: req.user.userId
+        });
     }
 
     res.status(200).json({ message: 'Request approved and processed' });
+});
+
+// GET /api/admin/profile-requests
+exports.getProfileRequests = asyncHandler(async (req, res) => {
+    const requests = await ProfileUpdateRequest.find({ status: 'pending' }).populate('userId', 'name email');
+    res.status(200).json(requests);
+});
+
+// PUT /api/admin/profile-requests/:id/reject
+exports.rejectProfileRequest = asyncHandler(async (req, res) => {
+    const request = await ProfileUpdateRequest.findById(req.params.id);
+    if (!request) return res.status(404).json({ message: 'Request not found' });
+    
+    request.status = 'rejected';
+    await request.save();
+
+    // Notify user about rejection
+    await Notification.create({
+        message: `Your ${request.type} update request has been rejected.`,
+        type: 'alert',
+        recipient: request.userId.toString(),
+        sender: req.user.userId
+    });
+
+    res.status(200).json({ message: 'Request rejected' });
 });
