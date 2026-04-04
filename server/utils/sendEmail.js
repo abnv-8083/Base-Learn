@@ -13,13 +13,17 @@ const sendEmail = async (options) => {
     const fromEmail = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 
     try {
-        const { data, error } = await resend.emails.send({
+        const payload = {
             from: `${fromName} <${fromEmail}>`,
             to: options.email,
             subject: options.subject,
             html: options.html,
-            text: options.message || '',
-        });
+        };
+        if (options.message) {
+            payload.text = options.message;
+        }
+
+        const { data, error } = await resend.emails.send(payload);
 
         if (error) {
             throw error;
