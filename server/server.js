@@ -111,6 +111,21 @@ app.post('/api/student/public-enquiry', asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, message: 'Enquiry submitted successfully!' });
 }));
 
+// Debug Route for Email Issues
+app.get('/api/debug-smtp', asyncHandler(async (req, res) => {
+    try {
+        const testEmail = req.query.email || process.env.FROM_EMAIL || 'test@example.com';
+        const result = await sendEmail({
+            email: testEmail,
+            subject: 'Render Deployment Email Test',
+            html: '<p>If you see this, Resend is working correctly on your deployment.</p>'
+        });
+        res.json({ success: true, message: 'Email passed to Resend successfully.', data: result, apiKeyPrefix: process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.substring(0, 5) + '...' : 'MISSING' });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message, stack: e.stack });
+    }
+}));
+
 // ── Protected routes (auth required via router-level middleware) ──
 app.use('/api/student', require('./routes/studentRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
