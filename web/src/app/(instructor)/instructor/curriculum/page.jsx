@@ -2,236 +2,250 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { BookOpen, Layers, Plus, Pencil, Trash2, Search, X, CheckCircle, ChevronDown, ChevronRight, GraduationCap } from 'lucide-react';
+import { BookOpen, Layers, Plus, Pencil, Trash2, Search, X, CheckCircle, ChevronDown, ChevronRight, GraduationCap, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useConfirmStore } from '@/store/confirmStore';
+
+// ── Shared form primitives ──────────────────────────────────
+function FormField({ label, required, error, children }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <label style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase', color: error ? '#dc2626' : '#64748b' }}>
+        {label}{required && <span style={{ color: '#ef4444', marginLeft: '3px' }}>*</span>}
+      </label>
+      {children}
+      {error && (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: '#dc2626', fontWeight: '600' }}>
+          <AlertCircle size={11} /> {error}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function SInput({ value, onChange, placeholder, error, onBlur, autoFocus }) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <input type="text" value={value} onChange={onChange} onBlur={onBlur} placeholder={placeholder} autoFocus={autoFocus}
+      onFocus={() => setFocused(true)} onBlurCapture={() => setFocused(false)}
+      style={{ width: '100%', padding: '10px 14px', border: `1.5px solid ${error ? '#ef4444' : focused ? 'var(--color-primary)' : '#e2e8f0'}`, borderRadius: '10px', fontSize: '14px', fontWeight: '500', color: '#1e293b', outline: 'none', transition: 'all 0.2s', background: 'white', boxShadow: error ? '0 0 0 3px rgba(239,68,68,0.1)' : focused ? '0 0 0 3px rgba(15,45,107,0.08)' : 'none' }}
+    />
+  );
+}
+
+function SSelect({ value, onChange, children, error, onBlur }) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <select value={value} onChange={onChange} onBlur={onBlur}
+      onFocus={() => setFocused(true)} onBlurCapture={() => setFocused(false)}
+      style={{ width: '100%', padding: '10px 14px', border: `1.5px solid ${error ? '#ef4444' : focused ? 'var(--color-primary)' : '#e2e8f0'}`, borderRadius: '10px', fontSize: '14px', fontWeight: '500', color: '#1e293b', outline: 'none', transition: 'all 0.2s', background: 'white', cursor: 'pointer', boxShadow: error ? '0 0 0 3px rgba(239,68,68,0.1)' : focused ? '0 0 0 3px rgba(15,45,107,0.08)' : 'none' }}>
+      {children}
+    </select>
+  );
+}
 
 export default function InstructorCurriculum() {
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const confirm = useConfirmStore(s => s.confirm);
-  
-  // Expanded subjects (to show chapters)
   const [expanded, setExpanded] = useState({});
 
-  // Modals
   const [showSubjectModal, setShowSubjectModal] = useState(false);
   const [showChapterModal, setShowChapterModal] = useState(false);
   const [form, setForm] = useState({});
+  const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
-  
-  // Lookups (for Faculty assignment)
   const [faculties, setFaculties] = useState([]);
 
-  useEffect(() => {
-    fetchSubjects();
-    fetchFaculties();
-  }, []);
+  useEffect(() => { fetchSubjects(); fetchFaculties(); }, []);
 
   const fetchSubjects = async () => {
     setLoading(true);
     try {
       const res = await axios.get('/api/instructor/subjects');
-      // res.data for instructor subjects is an array of Subject models
       const subs = Array.isArray(res.data) ? res.data : [];
-      
-      // Fetch chapters for each subject to have a full view
-      const subjectsWithChapters = await Promise.all(subs.map(async (s) => {
-         try {
-            const chRes = await axios.get(`/api/instructor/subjects/${s._id}/chapters`);
-            return { ...s, chapters: chRes.data || [] };
-         } catch {
-            return { ...s, chapters: [] };
-         }
+      const withChapters = await Promise.all(subs.map(async s => {
+        try { const r = await axios.get(`/api/instructor/subjects/${s._id}/chapters`); return { ...s, chapters: r.data || [] }; }
+        catch { return { ...s, chapters: [] }; }
       }));
-      
-      setSubjects(subjectsWithChapters);
-    } catch {
-      toast.error("Failed to load subjects.");
-    } finally {
-      setLoading(false);
-    }
+      setSubjects(withChapters);
+    } catch { toast.error('Failed to load subjects.'); }
+    finally { setLoading(false); }
   };
 
   const fetchFaculties = async () => {
     try {
       const res = await axios.get('/api/instructor/faculties');
-      // res.data.data includes { available, assigned }
       setFaculties(res.data.data?.available || []);
-    } catch (err) {
-      console.error('Failed to load faculties');
+    } catch {}
+  };
+
+  const toggleExpand = id => setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
+
+  // ── Validation ─────────────────────────────────────────────
+  const validateField = (f, v) => {
+    let err = null;
+    if (f === 'name') {
+      if (!v?.trim()) err = 'Name is required';
+      else if (v.trim().length < 2) err = 'Name must be at least 2 characters';
+      else if (v.trim().length > 80) err = 'Name must be 80 characters or fewer';
     }
+    setErrors(prev => ({ ...prev, [f]: err }));
+    return !err;
   };
 
-  const toggleExpand = (id) => {
-    setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  // SUBJECT ACTIONS
+  // ── Subject actions ────────────────────────────────────────
   const handleSaveSubject = async () => {
-    if (!form.name) return toast.error('Subject name is required');
+    if (!validateField('name', form.name)) { toast.error('Please fix the errors'); return; }
     setSaving(true);
     try {
-      if (form._id) {
-        await axios.put(`/api/instructor/subjects/${form._id}`, form);
-        toast.success('Subject updated');
-      } else {
-        await axios.post('/api/instructor/subjects', form);
-        toast.success('Subject created');
-      }
-      setShowSubjectModal(false);
-      fetchSubjects();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to save subject');
-    } finally {
-      setSaving(false);
-    }
+      if (form._id) { await axios.put(`/api/instructor/subjects/${form._id}`, form); toast.success('Subject updated'); }
+      else { await axios.post('/api/instructor/subjects', form); toast.success('Subject created'); }
+      setShowSubjectModal(false); fetchSubjects();
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to save subject'); }
+    finally { setSaving(false); }
   };
 
-  const handleDeleteSubject = async (id) => {
+  const handleDeleteSubject = id => {
     confirm({
       title: 'Delete Subject?',
-      message: 'Are you sure you want to permanently delete this subject and its connection to chapters? This may affect student enrollments and progress.',
-      confirmText: 'Delete Permanently',
-      type: 'danger',
-      icon: BookOpen,
+      message: 'Permanently delete this subject and all its chapter connections? This may affect student enrollments and progress.',
+      confirmText: 'Delete Permanently', type: 'danger', icon: BookOpen,
       onConfirm: async () => {
-        try {
-          await axios.delete(`/api/instructor/subjects/${id}`);
-          toast.success('Subject removed');
-          fetchSubjects();
-        } catch {
-          toast.error('Failed to delete subject.');
-        }
+        try { await axios.delete(`/api/instructor/subjects/${id}`); toast.success('Subject removed'); fetchSubjects(); }
+        catch { toast.error('Failed to delete subject.'); }
       }
     });
   };
 
-  // CHAPTER ACTIONS
+  // ── Chapter actions ────────────────────────────────────────
   const handleSaveChapter = async () => {
-    if (!form.name || !form.subjectId) return toast.error('Chapter name is required');
+    if (!validateField('name', form.name)) { toast.error('Please fix the errors'); return; }
+    if (!form.subjectId) { toast.error('Subject reference is missing'); return; }
     setSaving(true);
     try {
-      if (form._id) {
-        await axios.put(`/api/instructor/chapters/${form._id}`, { name: form.name });
-        toast.success('Chapter updated');
-      } else {
-        await axios.post('/api/instructor/chapters', { name: form.name, subjectId: form.subjectId });
-        toast.success('Chapter added');
-      }
-      setShowChapterModal(false);
-      fetchSubjects();
-    } catch (err) {
-      toast.error('Failed to save chapter.');
-    } finally {
-      setSaving(false);
-    }
+      if (form._id) { await axios.put(`/api/instructor/chapters/${form._id}`, { name: form.name }); toast.success('Chapter updated'); }
+      else { await axios.post('/api/instructor/chapters', { name: form.name, subjectId: form.subjectId }); toast.success('Chapter added'); }
+      setShowChapterModal(false); fetchSubjects();
+    } catch { toast.error('Failed to save chapter.'); }
+    finally { setSaving(false); }
   };
 
-  const handleDeleteChapter = async (id) => {
+  const handleDeleteChapter = id => {
     confirm({
       title: 'Delete Chapter?',
-      message: 'Are you sure you want to permanently delete this chapter? This will remove all associated lesson links and content mappings.',
-      confirmText: 'Delete Permanently',
-      type: 'danger',
-      icon: Trash2,
+      message: 'Permanently delete this chapter? All lesson links and content mappings will be removed.',
+      confirmText: 'Delete Permanently', type: 'danger', icon: Trash2,
       onConfirm: async () => {
-        try {
-          await axios.delete(`/api/instructor/chapters/${id}`);
-          toast.success('Chapter removed');
-          fetchSubjects();
-        } catch {
-          toast.error('Deletion failed');
-        }
+        try { await axios.delete(`/api/instructor/chapters/${id}`); toast.success('Chapter removed'); fetchSubjects(); }
+        catch { toast.error('Deletion failed'); }
       }
     });
   };
 
-  const filtered = subjects.filter(s => 
-    s.name?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = subjects.filter(s => s.name?.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div style={{ paddingBottom: '60px' }}>
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
+      {/* ── Header ── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
         <div>
           <h1 className="page-title">Academic Curriculum</h1>
-          <p className="page-subtitle">Organize your subjects and Chapters to structure the learning path.</p>
+          <p className="page-subtitle">Organize your subjects and chapters to structure the learning path.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => { setForm({ targetGrade: 'Class 10' }); setShowSubjectModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <button className="btn btn-primary" onClick={() => { setForm({ targetGrade: 'Class 10' }); setErrors({}); setShowSubjectModal(true); }}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '12px', padding: '12px 20px', fontWeight: '700', boxShadow: '0 4px 12px rgba(15,45,107,0.3)' }}>
           <Plus size={18} /> New Subject
         </button>
       </div>
 
-      <div style={{ position: 'relative', width: '350px', marginBottom: '32px' }}>
-        <Search size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-secondary)' }} />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder={`Search curriculum...`}
-          style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: '12px', border: '1px solid var(--color-border)', fontSize: '15px' }} />
+      {/* ── Search ── */}
+      <div style={{ position: 'relative', width: '360px', marginBottom: '24px' }}>
+        <Search size={15} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search subjects…"
+          style={{ width: '100%', padding: '12px 14px 12px 42px', borderRadius: '12px', border: '1.5px solid var(--color-border)', fontSize: '14px', outline: 'none', background: 'white', transition: 'border-color 0.2s' }}
+          onFocus={e => e.target.style.borderColor = 'var(--color-primary)'}
+          onBlur={e => e.target.style.borderColor = 'var(--color-border)'} />
       </div>
 
-      {loading ? <div className="spinner" style={{ margin: 'auto', display: 'block', marginTop: '20vh' }}></div> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* ── Subject list ── */}
+      {loading ? <div className="spinner" style={{ margin: 'auto', display: 'block', marginTop: '20vh' }} /> : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {filtered.length === 0 ? (
-            <div style={{ padding: '80px', textAlign: 'center', background: 'var(--color-bg)', borderRadius: '16px', border: '2px dashed var(--color-border)' }}>
-              <BookOpen size={48} color="var(--color-text-muted)" style={{ margin: '0 auto 16px' }} />
-              <h3 style={{ fontSize: '18px', fontWeight: 'bold' }}>No Subjects Found</h3>
+            <div style={{ padding: '80px', textAlign: 'center', background: 'white', borderRadius: '16px', border: '2px dashed var(--color-border)' }}>
+              <BookOpen size={48} color="var(--color-text-muted)" style={{ margin: '0 auto 16px', display: 'block', opacity: 0.4 }} />
+              <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '6px' }}>No Subjects Found</h3>
               <p style={{ color: 'var(--color-text-secondary)' }}>Get started by creating your first academic subject.</p>
             </div>
           ) : filtered.map(subject => (
-            <div key={subject._id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: expanded[subject._id] ? 'var(--color-bg)' : 'white', transition: 'all 0.2s' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, cursor: 'pointer' }} onClick={() => toggleExpand(subject._id)}>
-                  <div style={{ color: 'var(--color-text-secondary)' }}>
+            <div key={subject._id} style={{ background: 'white', borderRadius: '16px', border: '1px solid var(--color-border)', overflow: 'hidden', boxShadow: '0 2px 8px rgba(15,45,107,0.06)', transition: 'box-shadow 0.2s' }}>
+              {/* Subject row */}
+              <div style={{ padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', transition: 'background 0.15s', background: expanded[subject._id] ? '#f8faff' : 'white' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }} onClick={() => toggleExpand(subject._id)}>
+                  <div style={{ color: 'var(--color-text-muted)', flexShrink: 0 }}>
                     {expanded[subject._id] ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
                   </div>
-                  <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'var(--color-primary-light)', color: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <BookOpen size={20} />
                   </div>
                   <div>
-                    <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0 }}>{subject.name}</h3>
-                    <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', display: 'flex', gap: '8px', marginTop: '2px' }}>
-                      <span style={{ fontWeight: 'bold' }}>{subject.targetGrade || 'All Levels'}</span>
-                      <span>•</span>
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: 0, color: 'var(--color-text-primary)' }}>{subject.name}</h3>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '3px', fontSize: '12px', color: 'var(--color-text-muted)', alignItems: 'center' }}>
+                      <span style={{ fontWeight: '700', color: 'var(--color-primary)', background: 'var(--color-primary-light)', padding: '1px 8px', borderRadius: '10px' }}>{subject.targetGrade || 'All Levels'}</span>
+                      <span>·</span>
                       <span>{subject.chapters?.length || 0} Chapters</span>
-                      <span>•</span>
+                      <span>·</span>
                       <span>Fac: {(typeof subject.faculty === 'object' ? subject.faculty?.name : faculties.find(f => f._id === subject.faculty)?.name) || 'Unassigned'}</span>
                     </div>
                   </div>
                 </div>
-                
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => { setForm({ ...subject, faculty: subject.faculty?._id || subject.faculty }); setShowSubjectModal(true); }} className="btn btn-ghost" style={{ padding: '8px', color: 'var(--color-primary)' }}><Pencil size={16} /></button>
-                  <button onClick={() => { setForm({ subjectId: subject._id }); setShowChapterModal(true); }} className="btn btn-ghost" style={{ padding: '8px 12px', fontSize: '13px', fontWeight: 'bold', gap: '6px', color: 'var(--color-success)', background: '#ecfdf5' }}>
-                    <Plus size={16} /> Add Chapter
+
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button onClick={() => { setForm({ ...subject, faculty: subject.faculty?._id || subject.faculty }); setErrors({}); setShowSubjectModal(true); }}
+                    style={{ width: '34px', height: '34px', borderRadius: '8px', border: 'none', background: '#ede9fe', color: '#7c3aed', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Pencil size={15} />
                   </button>
-                  <button onClick={() => handleDeleteSubject(subject._id)} className="btn btn-ghost" style={{ padding: '8px', color: 'var(--color-error)' }}><Trash2 size={16} /></button>
+                  <button onClick={() => { setForm({ subjectId: subject._id }); setErrors({}); setShowChapterModal(true); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '8px', border: 'none', background: '#dcfce7', color: '#15803d', cursor: 'pointer', fontSize: '13px', fontWeight: '700' }}>
+                    <Plus size={14} /> Chapter
+                  </button>
+                  <button onClick={() => handleDeleteSubject(subject._id)}
+                    style={{ width: '34px', height: '34px', borderRadius: '8px', border: 'none', background: '#fee2e2', color: '#b91c1c', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Trash2 size={15} />
+                  </button>
                 </div>
               </div>
 
+              {/* Expanded chapters */}
               {expanded[subject._id] && (
-                <div style={{ padding: '8px 24px 24px 84px', background: 'white' }}>
-                   {subject.chapters?.length === 0 ? (
-                      <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', fontStyle: 'italic', padding: '12px 0' }}>No chapters defined yet.</div>
-                   ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', borderLeft: '1.5px solid var(--color-border)' }}>
-                        {subject.chapters.map(chapter => (
-                          <div key={chapter._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', position: 'relative' }}>
-                             {/* Connector line */}
-                             <div style={{ position: 'absolute', left: 0, top: '50%', width: '12px', height: '1px', background: 'var(--color-border)' }} />
-                             
-                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <div style={{ fontSize: '14px', fontWeight: '600' }}>{chapter.name}</div>
-                             </div>
-                             
-                             <div style={{ display: 'flex', gap: '4px' }}>
-                                <button onClick={() => { setForm(chapter); setShowChapterModal(true); }} className="btn btn-ghost" style={{ padding: '4px' }}><Pencil size={14} /></button>
-                                <button onClick={() => handleDeleteChapter(chapter._id)} className="btn btn-ghost" style={{ padding: '4px', color: 'var(--color-error)' }}><Trash2 size={14} /></button>
-                             </div>
+                <div style={{ borderTop: '1px solid var(--color-border)', padding: '12px 24px 16px 86px', background: '#fafbff' }}>
+                  {subject.chapters?.length === 0 ? (
+                    <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontStyle: 'italic', padding: '8px 0' }}>No chapters defined yet. Click "+ Chapter" to add one.</div>
+                  ) : (
+                    <div style={{ borderLeft: '2px solid var(--color-border)', paddingLeft: '0' }}>
+                      {subject.chapters.map((ch, idx) => (
+                        <div key={ch._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderBottom: idx < subject.chapters.length - 1 ? '1px solid #f1f5f9' : 'none', transition: 'background 0.15s' }}
+                          onMouseEnter={e => e.currentTarget.style.background = '#f0f4ff'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--color-primary)', flexShrink: 0 }} />
+                            <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--color-text-primary)' }}>{ch.name}</span>
                           </div>
-                        ))}
-                      </div>
-                   )}
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button onClick={() => { setForm(ch); setErrors({}); setShowChapterModal(true); }}
+                              style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', background: '#ede9fe', color: '#7c3aed', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Pencil size={12} />
+                            </button>
+                            <button onClick={() => handleDeleteChapter(ch._id)}
+                              style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', background: '#fee2e2', color: '#b91c1c', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -239,60 +253,71 @@ export default function InstructorCurriculum() {
         </div>
       )}
 
-      {/* Subject Modal */}
+      {/* ── Subject Modal ── */}
       {showSubjectModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 45, 107, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
-          <div className="card fade-in" style={{ width: '90%', maxWidth: '450px', padding: 0 }}>
-            <div style={{ padding: '20px 24px', background: 'var(--color-primary)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>{form._id ? 'Edit Subject' : 'Create New Subject'}</h2>
-              <button onClick={() => setShowSubjectModal(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><X size={20} /></button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,20,50,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(6px)', padding: '20px' }}>
+          <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '460px', overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,0.25)' }}>
+            <div style={{ padding: '22px 28px', background: 'linear-gradient(135deg, var(--color-primary-dark), var(--color-primary))', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'white' }}>{form._id ? 'Edit Subject' : 'Create New Subject'}</h2>
+                <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '2px' }}>Define curriculum structure</p>
+              </div>
+              <button onClick={() => setShowSubjectModal(false)} style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={16} />
+              </button>
             </div>
-            <div style={{ padding: '24px' }}>
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label className="form-label">Subject Name <span style={{color: 'red'}}>*</span></label>
-                <input type="text" className="form-input" value={form.name || ''} onChange={e => setForm({...form, name: e.target.value})} placeholder="e.g. Mathematics" />
-              </div>
-
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label className="form-label">Target Grade / Level</label>
-                <input type="text" className="form-input" value={form.targetGrade || ''} onChange={e => setForm({...form, targetGrade: e.target.value})} placeholder="e.g. Class 10 Foundation" />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Assigned Faculty Member</label>
-                <select className="form-select" value={form.faculty || ''} onChange={e => setForm({...form, faculty: e.target.value})}>
-                  <option value="">Select Faculty...</option>
+            <div style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <FormField label="Subject Name" required error={errors.name}>
+                <SInput value={form.name || ''} onChange={e => { setForm({...form, name: e.target.value}); if (errors.name) validateField('name', e.target.value); }}
+                  onBlur={() => validateField('name', form.name)} error={errors.name} placeholder="e.g. Mathematics" />
+              </FormField>
+              <FormField label="Target Grade / Level">
+                <SInput value={form.targetGrade || ''} onChange={e => setForm({...form, targetGrade: e.target.value})} placeholder="e.g. Class 10 Foundation" />
+              </FormField>
+              <FormField label="Assigned Faculty Member">
+                <SSelect value={form.faculty || ''} onChange={e => setForm({...form, faculty: e.target.value})}>
+                  <option value="">Select Faculty…</option>
                   {faculties.map(f => <option key={f._id} value={f._id}>{f.name}</option>)}
-                </select>
-              </div>
+                </SSelect>
+              </FormField>
             </div>
-            <div style={{ padding: '16px 24px', background: 'var(--color-bg)', display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--color-border)' }}>
-              <button onClick={() => setShowSubjectModal(false)} className="btn btn-secondary">Cancel</button>
-              <button onClick={handleSaveSubject} className="btn btn-primary" disabled={saving}>
-                {saving ? 'Saving...' : 'Save Subject'}
+            <div style={{ padding: '16px 28px', background: 'var(--color-bg)', borderTop: '1px solid var(--color-border)', display: 'flex', gap: '12px' }}>
+              <button onClick={() => setShowSubjectModal(false)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
+              <button onClick={handleSaveSubject} disabled={saving}
+                style={{ flex: 2, padding: '12px', background: 'var(--color-primary)', border: 'none', borderRadius: '12px', color: 'white', fontSize: '14px', fontWeight: '700', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <CheckCircle size={16} /> {saving ? 'Saving…' : 'Save Subject'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Chapter Modal */}
+      {/* ── Chapter Modal ── */}
       {showChapterModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 45, 107, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
-          <div className="card fade-in" style={{ width: '90%', maxWidth: '400px', padding: 0 }}>
-            <div style={{ padding: '20px 24px', background: 'var(--color-success)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>{form._id ? 'Edit Chapter' : 'Add Chapter'}</h2>
-              <button onClick={() => setShowChapterModal(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><X size={20} /></button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,20,50,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(6px)', padding: '20px' }}>
+          <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '420px', overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,0.25)' }}>
+            <div style={{ padding: '22px 28px', background: 'linear-gradient(135deg, #065f46, #10b981)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'white' }}>{form._id ? 'Edit Chapter' : 'Add Chapter'}</h2>
+                <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '2px' }}>Add a chapter to this subject</p>
+              </div>
+              <button onClick={() => setShowChapterModal(false)} style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={16} />
+              </button>
             </div>
-            <div style={{ padding: '24px' }}>
-               <label className="form-label">Chapter Name <span style={{color: 'red'}}>*</span></label>
-               <input type="text" className="form-input" autoFocus value={form.name || ''} onChange={e => setForm({...form, name: e.target.value})} placeholder="e.g. Atomic Structure" />
+            <div style={{ padding: '28px' }}>
+              <FormField label="Chapter Name" required error={errors.name}>
+                <SInput value={form.name || ''} autoFocus
+                  onChange={e => { setForm({...form, name: e.target.value}); if (errors.name) validateField('name', e.target.value); }}
+                  onBlur={() => validateField('name', form.name)} error={errors.name} placeholder="e.g. Atomic Structure" />
+              </FormField>
             </div>
-            <div style={{ padding: '16px 24px', background: 'var(--color-bg)', display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--color-border)' }}>
-               <button onClick={() => setShowChapterModal(false)} className="btn btn-ghost">Cancel</button>
-               <button onClick={handleSaveChapter} className="btn btn-primary" style={{ background: 'var(--color-success)' }} disabled={saving}>
-                 {saving ? 'Saving...' : 'Confirm Chapter'}
-               </button>
+            <div style={{ padding: '16px 28px', background: 'var(--color-bg)', borderTop: '1px solid var(--color-border)', display: 'flex', gap: '12px' }}>
+              <button onClick={() => setShowChapterModal(false)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
+              <button onClick={handleSaveChapter} disabled={saving}
+                style={{ flex: 2, padding: '12px', background: '#10b981', border: 'none', borderRadius: '12px', color: 'white', fontSize: '14px', fontWeight: '700', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <CheckCircle size={16} /> {saving ? 'Saving…' : 'Confirm Chapter'}
+              </button>
             </div>
           </div>
         </div>

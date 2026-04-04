@@ -68,12 +68,21 @@ export default function FacultyAssignments() {
     fetchSubmissions();
   }, []);
 
+  const [gradeErrors, setGradeErrors] = useState({});
+
+  const validateMarks = (v) => {
+    if (!v && v !== 0) return 'Marks are required';
+    const n = Number(v);
+    if (isNaN(n)) return 'Must be a valid number';
+    if (n < 0) return 'Marks cannot be negative';
+    if (n > gradeModal.maxMarks) return `Cannot exceed max marks (${gradeModal.maxMarks})`;
+    return null;
+  };
+
   const handleGradeSubmit = async () => {
-    if (!gradeData.marks) {
-      toast.error('Marks are required');
-      return;
-    }
-    
+    const marksErr = validateMarks(gradeData.marks);
+    if (marksErr) { setGradeErrors({ marks: marksErr }); return; }
+    setGradeErrors({});
     try {
       const sid = typeof gradeModal.studentId === 'object' ? gradeModal.studentId._id : gradeModal.studentId;
       setGradingId(sid);
@@ -86,12 +95,9 @@ export default function FacultyAssignments() {
       setGradeModal({ ...gradeModal, open: false });
       setGradeData({ marks: '', feedback: '' });
       fetchSubmissions();
-      // If we are in the detail view, update the local view if needed (fetchSubmissions handles it)
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to grade');
-    } finally {
-      setGradingId(null);
-    }
+    } finally { setGradingId(null); }
   };
 
   // Group submissions by Assessment ID for the List View
@@ -322,56 +328,70 @@ export default function FacultyAssignments() {
 
       {/* Grading Modal */}
       {gradeModal.open && (
-         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 45, 107, 0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(8px)', padding: '20px' }}>
-            <div className="card fade-in" style={{ width: '100%', maxWidth: '480px', padding: 0, overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
-               <div style={{ padding: '24px', borderBottom: '1px solid var(--color-border)', background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+         <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,20,50,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(8px)', padding: '20px' }}>
+            <div style={{ width: '100%', maxWidth: '480px', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,0.3)', background: 'white' }}>
+               {/* Modal header */}
+               <div style={{ padding: '22px 28px', background: 'linear-gradient(135deg, #065f46, #10b981)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                     <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: 'var(--color-text-primary)' }}>Evaluate Student</h3>
-                     <p style={{ margin: '2px 0 0', fontSize: '13px', color: 'var(--color-text-secondary)', fontWeight: '500' }}>{gradeModal.studentName} • {gradeModal.title}</p>
+                     <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'white' }}>Evaluate Submission</h3>
+                     <p style={{ margin: '3px 0 0', fontSize: '12px', color: 'rgba(255,255,255,0.75)', fontWeight: '500' }}>{gradeModal.studentName} · {gradeModal.title}</p>
                   </div>
-                  <button onClick={() => setGradeModal({ ...gradeModal, open: false })} className="btn btn-ghost" style={{ padding: '8px' }}><X size={20} /></button>
+                  <button onClick={() => { setGradeModal({ ...gradeModal, open: false }); setGradeErrors({}); }} style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={16} /></button>
                </div>
 
-               <div style={{ padding: '24px' }}>
-                  <div style={{ marginBottom: '20px' }}>
-                     <label className="form-label" style={{ fontWeight: '800', fontSize: '12px', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Marks Awarded (Out of {gradeModal.maxMarks})</label>
-                     <input 
-                        type="number" 
-                        className="form-input" 
-                        max={gradeModal.maxMarks}
+               <div style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                  {/* Marks field with inline validation */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                     <label style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase', color: gradeErrors.marks ? '#dc2626' : '#64748b' }}>
+                        Marks Awarded <span style={{ color: '#ef4444' }}>*</span> <span style={{ fontWeight: '500', color: '#94a3b8' }}>(max: {gradeModal.maxMarks})</span>
+                     </label>
+                     <input
+                        type="number"
+                        max={gradeModal.maxMarks} min={0}
                         value={gradeData.marks}
-                        onChange={e => setGradeData({ ...gradeData, marks: e.target.value })}
-                        placeholder="Enter score..."
-                        style={{ height: '48px', borderRadius: '12px', fontSize: '16px', fontWeight: 'bold' }}
+                        onChange={e => { setGradeData({ ...gradeData, marks: e.target.value }); if (gradeErrors.marks) setGradeErrors({}); }}
+                        onBlur={e => { const err = validateMarks(e.target.value); setGradeErrors(prev => ({ ...prev, marks: err })); }}
+                        placeholder={`0 – ${gradeModal.maxMarks}`}
+                        style={{ width: '100%', padding: '12px 14px', border: `1.5px solid ${gradeErrors.marks ? '#ef4444' : '#e2e8f0'}`, borderRadius: '12px', fontSize: '18px', fontWeight: '700', color: '#1e293b', outline: 'none', transition: 'all 0.2s', boxShadow: gradeErrors.marks ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none' }}
+                        onFocus={e => { if (!gradeErrors.marks) e.target.style.borderColor = '#10b981'; e.target.style.boxShadow = '0 0 0 3px rgba(16,185,129,0.12)'; }}
+                        onBlurCapture={e => { if (!gradeErrors.marks) { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }}}
                      />
+                     {gradeErrors.marks && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#dc2626', fontWeight: '600' }}>
+                           <AlertCircle size={11} /> {gradeErrors.marks}
+                        </span>
+                     )}
                   </div>
-                  <div style={{ marginBottom: '24px' }}>
-                     <label className="form-label" style={{ fontWeight: '800', fontSize: '12px', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Feedback Notes (Optional)</label>
-                     <textarea 
-                        className="form-input" 
-                        rows={4} 
+
+                  {/* Feedback textarea */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                     <label style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#64748b' }}>Feedback Notes <span style={{ color: '#94a3b8', fontWeight: '500' }}>(Optional)</span></label>
+                     <textarea
+                        rows={4}
                         value={gradeData.feedback}
                         onChange={e => setGradeData({ ...gradeData, feedback: e.target.value })}
-                        placeholder="Write constructive feedback for the student..."
-                        style={{ borderRadius: '12px', padding: '12px', fontSize: '14px' }}
+                        placeholder="Write constructive feedback for the student…"
+                        style={{ width: '100%', padding: '12px 14px', border: '1.5px solid #e2e8f0', borderRadius: '12px', fontSize: '14px', fontWeight: '500', color: '#1e293b', outline: 'none', resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.6, transition: 'border-color 0.2s' }}
+                        onFocus={e => { e.target.style.borderColor = '#10b981'; e.target.style.boxShadow = '0 0 0 3px rgba(16,185,129,0.12)'; }}
+                        onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }}
                      />
                   </div>
 
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                     <button onClick={() => setGradeModal({ ...gradeModal, open: false })} style={{ flex: 1, height: '48px', borderRadius: '12px', background: 'var(--color-bg)', color: 'var(--color-text-primary)', fontWeight: '800', border: '1px solid var(--color-border)', cursor: 'pointer' }}>Cancel</button>
-                     <button 
-                        onClick={handleGradeSubmit} 
-                        disabled={gradingId || !gradeData.marks}
-                        className="btn btn-primary"
-                        style={{ flex: 2, height: '48px', borderRadius: '12px', fontWeight: '900', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                  <div style={{ display: 'flex', gap: '12px', paddingTop: '4px' }}>
+                     <button onClick={() => { setGradeModal({ ...gradeModal, open: false }); setGradeErrors({}); }} style={{ flex: 1, padding: '12px', borderRadius: '12px', background: '#f1f5f9', color: '#64748b', fontWeight: '700', border: 'none', cursor: 'pointer', fontSize: '14px' }}>Cancel</button>
+                     <button
+                        onClick={handleGradeSubmit}
+                        disabled={!!gradingId}
+                        style={{ flex: 2, padding: '12px', background: 'linear-gradient(135deg, #065f46, #10b981)', border: 'none', borderRadius: '12px', color: 'white', fontSize: '14px', fontWeight: '800', cursor: gradingId ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(16,185,129,0.4)', opacity: gradingId ? 0.7 : 1 }}
                      >
-                        {gradingId ? <div className="spinner" style={{ width: '16px', height: '16px', border: '2px solid white', borderTop: '2px solid transparent' }}></div> : <><CheckCircle size={18} /> Submit Grade</>}
+                        {gradingId ? <><div style={{ width: '16px', height: '16px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.4)', borderTopColor: 'white', animation: 'spin 0.8s linear infinite' }} /> Grading…</> : <><CheckCircle size={17} /> Submit Grade</>}
                      </button>
                   </div>
                </div>
             </div>
          </div>
       )}
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
