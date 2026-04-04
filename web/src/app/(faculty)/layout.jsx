@@ -6,11 +6,13 @@ import { useAuthStore } from '@/store/authStore';
 import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
 import { LayoutDashboard, Users, FileText, Video, PenTool, Bell } from 'lucide-react';
+import { useBadgeCounts } from '@/hooks/useBadgeCounts';
 
 export default function FacultyLayout({ children }) {
   const router = useRouter();
   const { user, loadUser, loading } = useAuthStore();
   const [isReady, setIsReady] = useState(false);
+  const { badges } = useBadgeCounts('faculty');
 
   useEffect(() => {
     const init = async () => {
@@ -33,12 +35,12 @@ export default function FacultyLayout({ children }) {
   if (!user || (user.role !== 'faculty' && user.role !== 'admin')) return null;
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/faculty/dashboard' },
-    { icon: Users, label: 'My Students', path: '/faculty/students' },
-    { icon: FileText, label: 'Assignments', path: '/faculty/assignments' },
-    { icon: Video, label: 'Live Sessions', path: '/faculty/live-classes' },
-    { icon: PenTool, label: 'Upload Content', path: '/faculty/content' },
-    { icon: Bell, label: 'Notifications', path: '/faculty/notifications' }
+    { icon: LayoutDashboard, label: 'Dashboard',      path: '/faculty/dashboard' },
+    { icon: Users,           label: 'My Students',    path: '/faculty/students' },
+    { icon: FileText,        label: 'Assignments',    path: '/faculty/assignments',  badge: badges.pendingGrading || null },
+    { icon: Video,           label: 'Live Sessions',  path: '/faculty/live-classes', badge: badges.ongoingSession ? 'LIVE' : null },
+    { icon: PenTool,         label: 'Upload Content', path: '/faculty/content',      badge: badges.rejectedContent || null },
+    { icon: Bell,            label: 'Notifications',  path: '/faculty/notifications',badge: badges.unreadNotifs    || null }
   ];
 
   return (

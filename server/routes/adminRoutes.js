@@ -9,6 +9,7 @@ router.use(authorizeRoles('admin'));
 
 // Dashboard
 router.get('/dashboard', adminController.getDashboardStats);
+router.get('/analytics', adminController.getAnalytics);
 
 // Admission enquiries (landing form)
 router.get('/enquiries', adminController.getAdmissionEnquiries);
@@ -68,5 +69,15 @@ router.post('/whatsapp/logout', adminController.logoutWhatsApp);
 
 // Uploads
 router.post('/upload-image', uploadImage.single('image'), adminController.uploadImage);
+
+// Payments
+router.get('/payments', adminController.getPayments);
+router.post('/payments', adminController.createPayment);
+router.put('/payments/:id', adminController.updatePayment);
+router.delete('/payments/:id', adminController.deletePayment);
+router.get('/payments/student/:studentId', adminController.getStudentPayments);
+
+// Badge Counts (for sidebar live badges)
+router.get('/badge-counts', adminController.getAdminBadgeCounts);
 
 module.exports = router;

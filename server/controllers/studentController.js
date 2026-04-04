@@ -275,8 +275,14 @@ const joinLiveClass = asyncHandler(async (req, res) => {
     const existingAttendance = await LiveClass.findOne({ _id: id, 'attendance.studentId': studentId });
     if (!existingAttendance) {
         await LiveClass.findByIdAndUpdate(id, {
-            $push: { attendance: { studentId, attended: true, joinTime: new Date() } }
+            $push: { attendance: { studentId, attended: true, joinTime: new Date(), deviceEvents: [] } }
         });
+    } else {
+        // Re-join: update joinTime (latest join wins)
+        await LiveClass.updateOne(
+            { _id: id, 'attendance.studentId': studentId },
+            { $set: { 'attendance.$.joinTime': new Date(), 'attendance.$.attended': true } }
+        );
     }
 
     res.status(200).json({ success: true, data: { joinUrl } });
@@ -764,6 +770,73 @@ const getProgression = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, data: progressionData });
 });
 
+// @desc    Record student leaving a live class
+// @route   POST /api/student/live-classes/:id/leave
+const leaveLiveClass = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const studentId = req.user._id;
+    const leaveTime = new Date();
+
+    const liveClass = await LiveClass.findById(id);
+    if (!liveClass) return res.status(404).json({ message: 'Live class not found' });
+
+    const record = liveClass.attendance.find(a => a.studentId?.toString() === studentId.toString());
+    if (!record) return res.status(404).json({ message: 'Attendance record not found' });
+
+    record.leaveTime = leaveTime;
+
+    // Compute total session duration
+    if (record.joinTime) {
+        record.totalDurationSeconds = Math.round((leaveTime - record.joinTime) / 1000);
+    }
+
+    // Compute camera-on and mic-on durations from deviceEvents timeline
+    const computeDuration = (events, onType, offType) => {
+        let total = 0;
+        let lastOnTime = null;
+        for (const ev of (events || [])) {
+            if (ev.type === onType) lastOnTime = new Date(ev.timestamp);
+            else if (ev.type === offType && lastOnTime) {
+                total += Math.round((new Date(ev.timestamp) - lastOnTime) / 1000);
+                lastOnTime = null;
+            }
+        }
+        if (lastOnTime) total += Math.round((leaveTime - lastOnTime) / 1000);
+        return total;
+    };
+
+    record.cameraOnDurationSeconds = computeDuration(record.deviceEvents, 'camera_on', 'camera_off');
+    record.micOnDurationSeconds    = computeDuration(record.deviceEvents, 'mic_on', 'mic_off');
+
+    liveClass.markModified('attendance');
+    await liveClass.save();
+
+    res.status(200).json({ success: true, message: 'Leave time recorded' });
+});
+
+// @desc    Record a camera/mic toggle event for a student in a live class
+// @route   POST /api/student/live-classes/:id/device-event
+const trackDeviceEvent = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { type } = req.body;
+    const studentId = req.user._id;
+
+    const validTypes = ['camera_on', 'camera_off', 'mic_on', 'mic_off'];
+    if (!validTypes.includes(type)) {
+        return res.status(400).json({ message: 'Invalid event type' });
+    }
+
+    const result = await LiveClass.findOneAndUpdate(
+        { _id: id, 'attendance.studentId': studentId },
+        { $push: { 'attendance.$.deviceEvents': { type, timestamp: new Date() } } },
+        { new: true }
+    );
+
+    if (!result) return res.status(404).json({ message: 'Attendance record not found. Join the class first.' });
+
+    res.status(200).json({ success: true, message: `Event "${type}" recorded` });
+});
+
 module.exports = {
   getDashboard,
   getRecordedClasses,
@@ -780,5 +853,7 @@ module.exports = {
   trackRecordedClassAction,
   sendEnquiry,
   getProgression,
-  joinLiveClass
+  joinLiveClass,
+  leaveLiveClass,
+  trackDeviceEvent
 };

@@ -8,6 +8,7 @@ import Topbar from '@/components/layout/Topbar';
 import { LayoutDashboard, BookOpen, Video, ClipboardList, PenTool, CalendarDays, Radio, User, HelpCircle, X, Send } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { useBadgeCounts } from '@/hooks/useBadgeCounts';
 
 export default function StudentLayout({ children }) {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function StudentLayout({ children }) {
   const [showEnquiry, setShowEnquiry] = useState(false);
   const [enquiryMsg, setEnquiryMsg] = useState('');
   const [sendingEnquiry, setSendingEnquiry] = useState(false);
+  const { badges } = useBadgeCounts('student');
 
   useEffect(() => {
     const init = async () => {
@@ -38,13 +40,13 @@ export default function StudentLayout({ children }) {
   if (!user || user.role !== 'student') return null;
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/student/dashboard' },
-    { icon: BookOpen, label: 'My Class', path: '/student/recorded-classes' },
-    { icon: Radio, label: 'Live Classes', path: '/student/live-classes' },
-    { icon: CalendarDays, label: 'Calendar', path: '/student/calendar' },
-    { icon: ClipboardList, label: 'Assignments', path: '/student/assignments' },
-    { icon: PenTool, label: 'Tests & Exams', path: '/student/tests' },
-    { icon: User, label: 'My Profile', path: '/student/profile' },
+    { icon: LayoutDashboard, label: 'Dashboard',    path: '/student/dashboard' },
+    { icon: BookOpen,        label: 'My Class',     path: '/student/recorded-classes' },
+    { icon: Radio,           label: 'Live Classes', path: '/student/live-classes',  badge: badges.upcomingLive || null },
+    { icon: CalendarDays,    label: 'Calendar',     path: '/student/calendar' },
+    { icon: ClipboardList,   label: 'Assignments',  path: '/student/assignments',   badge: badges.pendingAssignments || null },
+    { icon: PenTool,         label: 'Tests & Exams',path: '/student/tests',         badge: badges.pendingTests || null },
+    { icon: User,            label: 'My Profile',   path: '/student/profile' },
   ];
 
   const handleSendEnquiry = async () => {

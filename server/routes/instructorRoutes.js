@@ -101,8 +101,18 @@ router.post('/notifications', instructorController.sendNotification);
 router.get('/assignments', instructorController.getAssignments);
 router.patch('/assignments/:id/distribute', instructorController.distributeAssignment);
 
+// Live Class Management
+router.get('/live-classes', instructorController.getLiveClasses);
+router.get('/live-classes/:id/analytics', instructorController.getLiveClassAnalytics);
+router.patch('/live-classes/:id/assign-batches', instructorController.assignLiveClassBatches);
+router.patch('/live-classes/:id/assign-recording', instructorController.assignLiveClassRecording);
+router.patch('/live-classes/:id/assign-notes', instructorController.assignLiveClassNotes);
+
 // Profile Update Requests
 router.post('/profile/update-request', instructorController.requestProfileUpdate);
 router.get('/profile/update-request/pending', instructorController.getPendingProfileRequest);
+
+// Badge Counts
+router.get('/badge-counts', instructorController.getInstructorBadgeCounts);
 
 module.exports = router;

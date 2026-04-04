@@ -18,7 +18,9 @@ const {
   trackRecordedClassAction,
   sendEnquiry,
   getProgression,
-  joinLiveClass
+  joinLiveClass,
+  leaveLiveClass,
+  trackDeviceEvent
 } = require('../controllers/studentController');
 
 // All routes require authentication
@@ -33,6 +35,8 @@ router.get('/progression', getProgression);
 router.get('/recorded-classes', getRecordedClasses);
 router.get('/live-classes', getLiveClasses);
 router.get('/live-classes/:id/join', joinLiveClass);
+router.post('/live-classes/:id/leave', leaveLiveClass);
+router.post('/live-classes/:id/device-event', trackDeviceEvent);
 router.get('/assignments', getAssignments);
 router.get('/tests', getTests);
 router.get('/assessments', getAllAssessments);
@@ -44,5 +48,23 @@ router.put('/profile', updateProfile);
 router.post('/pay', mockPayment);
 router.patch('/recorded-classes/:id/track', trackRecordedClassAction);
 router.post('/enquiry', sendEnquiry);
+
+router.get('/badge-counts', async (req, res) => {
+  try {
+    const Assignment = require('../models/Assignment');
+    const Test       = require('../models/Test');
+    const LiveClass  = require('../models/LiveClass');
+    const studentId  = req.user.userId;
+
+    const [pendingAssignments, pendingTests, upcomingLive] = await Promise.all([
+      Assignment.countDocuments({ status: 'published', 'submissions.student': { $ne: studentId } }),
+      Test.countDocuments({ status: 'published', 'submissions.student': { $ne: studentId } }),
+      LiveClass.countDocuments({ status: { $in: ['scheduled', 'ongoing'] } })
+    ]);
+    res.json({ success: true, data: { pendingAssignments, pendingTests, upcomingLive } });
+  } catch {
+    res.json({ success: true, data: { pendingAssignments: 0, pendingTests: 0, upcomingLive: 0 } });
+  }
+});
 
 module.exports = router;

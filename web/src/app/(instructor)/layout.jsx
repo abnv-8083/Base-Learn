@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
-import { LayoutDashboard, Users, FileCheck, Layers, Bell, ClipboardCheck, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Users, FileCheck, Layers, Bell, ClipboardCheck, BookOpen, Video } from 'lucide-react';
+import { useBadgeCounts } from '@/hooks/useBadgeCounts';
 
 export default function InstructorLayout({ children }) {
   const router = useRouter();
   const { user, loadUser, loading } = useAuthStore();
   const [isReady, setIsReady] = useState(false);
+  const { badges } = useBadgeCounts('instructor');
 
   useEffect(() => {
     const init = async () => {
@@ -33,13 +35,14 @@ export default function InstructorLayout({ children }) {
   if (!user || (user.role !== 'instructor' && user.role !== 'admin')) return null;
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/instructor/dashboard' },
-    { icon: Layers, label: 'Batches', path: '/instructor/batches' },
-    { icon: BookOpen, label: 'Curriculum', path: '/instructor/curriculum' },
-    { icon: Users, label: 'Students', path: '/instructor/students' },
-    { icon: FileCheck, label: 'Content Verification', path: '/instructor/content' },
-    { icon: ClipboardCheck, label: 'Marking Center', path: '/instructor/marking-center' },
-    { icon: Bell, label: 'Notifications', path: '/instructor/notifications' }
+    { icon: LayoutDashboard, label: 'Dashboard',           path: '/instructor/dashboard' },
+    { icon: Layers,          label: 'Batches',             path: '/instructor/batches' },
+    { icon: BookOpen,        label: 'Curriculum',          path: '/instructor/curriculum' },
+    { icon: Users,           label: 'Students',            path: '/instructor/students' },
+    { icon: FileCheck,       label: 'Content Verification',path: '/instructor/content',      badge: badges.pendingContent    || null },
+    { icon: Video,           label: 'Live Classes',        path: '/instructor/live-classes',  badge: badges.liveNow > 0 ? 'LIVE' : null },
+    { icon: ClipboardCheck,  label: 'Marking Center',      path: '/instructor/marking-center',badge: badges.pendingAssessments|| null },
+    { icon: Bell,            label: 'Notifications',       path: '/instructor/notifications' }
   ];
 
   return (

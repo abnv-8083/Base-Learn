@@ -52,4 +52,24 @@ router.delete('/content/manage/:type/:id', facultyController.deleteUploadedConte
 router.get('/assessments/forwarded', facultyController.getForwardedSubmissions);
 router.post('/assessments/:id/grade/:studentId', facultyController.gradeSubmission);
 
+// Faculty badge counts
+router.get('/badge-counts', async (req, res) => {
+    try {
+        const Assignment = require('../models/Assignment');
+        const LiveClass  = require('../models/LiveClass');
+        const Notification = require('../models/Notification');
+        const facultyId  = req.user.userId;
+
+        const [pendingGrading, ongoingSession, rejectedContent, unreadNotifs] = await Promise.all([
+            Assignment.countDocuments({ faculty: facultyId, 'submissions.0': { $exists: true } }),
+            LiveClass.countDocuments({ faculty: facultyId, status: 'ongoing' }),
+            require('../models/RecordedClass').countDocuments({ faculty: facultyId, status: 'rejected' }),
+            Notification.countDocuments({ recipient: facultyId, read: false })
+        ]);
+        res.json({ success: true, data: { pendingGrading, ongoingSession: ongoingSession > 0, rejectedContent, unreadNotifs } });
+    } catch {
+        res.json({ success: true, data: { pendingGrading: 0, ongoingSession: false, rejectedContent: 0, unreadNotifs: 0 } });
+    }
+});
+
 module.exports = router;

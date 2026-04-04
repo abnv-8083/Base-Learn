@@ -634,6 +634,7 @@ exports.getContentForVerification = async (req, res) => {
         const Subject = require('../models/Subject');
         const Chapter = require('../models/Chapter');
         const RecordedClass = require('../models/RecordedClass');
+        const LiveClass = require('../models/LiveClass');
 
         const subjectQuery = req.user.role === 'admin' ? {} : { instructor: userId };
         const instructorSubjects = await Subject.find(subjectQuery).select('_id name');
@@ -779,6 +780,35 @@ exports.getContentForVerification = async (req, res) => {
             });
         });
 
+        // Get Live Classes
+        let liveQuery = req.user.role === 'admin' ? {} : {
+            $or: [
+                { subject: { $in: subjectIds } },
+                { faculty: { $in: facultyIds } }
+            ]
+        };
+        // For Live Classes, status can be any of the live class states
+        if (dbStatus) {
+             if (dbStatus === 'published') liveQuery.status = { $in: ['upcoming', 'ongoing', 'completed'] };
+             else liveQuery.status = dbStatus;
+        }
+
+        const liveClasses = await LiveClass.find(liveQuery).populate('faculty', 'name').populate('batches', 'name').lean();
+        liveClasses.forEach(l => {
+            allContent.push({
+                _id: l._id,
+                title: l.title,
+                url: l.meetingLink,
+                assignedTo: l.batches || [],
+                type: 'live',
+                createdAt: l.createdAt,
+                faculty: l.faculty || { name: 'Unknown' },
+                subject: { name: l.subject },
+                approvalStatus: l.status,
+                itemModel: 'LiveClass'
+            });
+        });
+
         // Sort by date newest first
         allContent.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
@@ -815,6 +845,12 @@ exports.updateContentStatus = async (req, res) => {
             contentObj = await Test.findByIdAndUpdate(id, updateOps, { new: true });
         } else if (itemModel === 'Assignment') {
             contentObj = await Assignment.findByIdAndUpdate(id, updateOps, { new: true });
+        } else if (itemModel === 'LiveClass') {
+            // Update batches for LiveClass
+            if (batchIds && batchIds.length > 0) {
+                 updateOps.batches = batchIds;
+            }
+            contentObj = await LiveClass.findByIdAndUpdate(id, updateOps, { new: true });
         } else if (itemModel === 'ChapterResource') {
             const chapter = await Chapter.findById(chapterId);
             if (chapter) {
@@ -877,6 +913,9 @@ exports.updateAssignedContent = async (req, res) => {
             await Test.findByIdAndUpdate(id, updateData);
         } else if (itemModel === 'Assignment') {
             await Assignment.findByIdAndUpdate(id, updateData);
+        } else if (itemModel === 'LiveClass') {
+            if (batchIds) updateData.batches = batchIds;
+            await LiveClass.findByIdAndUpdate(id, updateData);
         } else if (itemModel === 'ChapterResource') {
             const chapter = await Chapter.findById(chapterId);
             if (chapter) {
@@ -909,6 +948,8 @@ exports.deleteAssignedContent = async (req, res) => {
             await Test.findByIdAndDelete(id);
         } else if (itemModel === 'Assignment') {
             await Assignment.findByIdAndDelete(id);
+        } else if (itemModel === 'LiveClass') {
+            await LiveClass.findByIdAndDelete(id);
         } else if (itemModel === 'ChapterResource') {
             const chapter = await Chapter.findById(chapterId);
             if (chapter) {
@@ -1374,3 +1415,310 @@ exports.getBatchesByClass = async (req, res) => {
         res.status(500).json({ message: 'Error fetching batches', error: error.message });
     }
 };
+
+// GET /api/instructor/live-classes
+exports.getLiveClasses = async (req, res) => {
+    try {
+        const userId = req.user.userId || req.user._id;
+        const Subject = require('../models/Subject');
+        const LiveClass = require('../models/LiveClass');
+        const Faculty = require('../models/Faculty');
+
+        const subjectQuery = req.user.role === 'admin' ? {} : { instructor: userId };
+        const instructorSubjects = await Subject.find(subjectQuery).select('_id');
+        const subjectIds = instructorSubjects.map(s => s._id);
+
+        const facultyQuery = req.user.role === 'admin' ? {} : { assignedInstructor: userId };
+        const assignedFaculties = await Faculty.find(facultyQuery).select('_id');
+        const facultyIds = assignedFaculties.map(f => f._id);
+
+        const query = req.user.role === 'admin' ? {} : {
+            $or: [
+                { subject: { $in: subjectIds } },
+                { faculty: { $in: facultyIds } }
+            ]
+        };
+
+        const classes = await LiveClass.find(query)
+            .populate('faculty', 'name email image')
+            .populate('batches', 'name')
+            .sort({ scheduledAt: -1 })
+            .lean();
+
+        // Check for associated recordings
+        const RecordedClass = require('../models/RecordedClass');
+        const results = await Promise.all(classes.map(async (c) => {
+            if (c.status === 'completed') {
+                const recording = await RecordedClass.findOne({ liveClass: c._id }).lean();
+                return { ...c, recording };
+            }
+            return c;
+        }));
+
+        res.status(200).json({ success: true, data: results });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error fetching live classes', error: error.message });
+    }
+};
+
+// PATCH /api/instructor/live-classes/:id/assign-batches
+// Instructor assigns a live class (created by faculty) to one or more batches
+exports.assignLiveClassBatches = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { batchIds } = req.body; // array of batch IDs
+
+        if (!batchIds || !Array.isArray(batchIds)) {
+            return res.status(400).json({ message: 'batchIds array is required' });
+        }
+
+        const LiveClass = require('../models/LiveClass');
+        const liveClass = await LiveClass.findByIdAndUpdate(
+            id,
+            { $set: { batches: batchIds } },
+            { new: true }
+        ).populate('faculty', 'name').populate('batches', 'name');
+
+        if (!liveClass) return res.status(404).json({ message: 'Live class not found' });
+
+        await logAction(req, 'Assigned Live Class to Batches', liveClass.title, {
+            targetId: id, targetModel: 'LiveClass', details: { batchCount: batchIds.length }
+        });
+
+        // Notify faculty
+        await Notification.create({
+            message: `Your live class "${liveClass.title}" has been assigned to ${batchIds.length} batch(es).`,
+            type: 'info',
+            recipient: liveClass.faculty._id,
+            sender: req.user.userId
+        });
+
+        res.status(200).json({ success: true, data: liveClass, message: 'Batches assigned successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error assigning batches to live class', error: error.message });
+    }
+};
+
+// PATCH /api/instructor/live-classes/:id/assign-recording
+// After class ends, instructor publishes the auto-generated recording to the assigned batches
+exports.assignLiveClassRecording = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { recordingUrl, notesUrl } = req.body; // optional URL overrides
+
+        const LiveClass = require('../models/LiveClass');
+        const RecordedClass = require('../models/RecordedClass');
+
+        const liveClass = await LiveClass.findById(id).populate('batches', '_id name');
+        if (!liveClass) return res.status(404).json({ message: 'Live class not found' });
+        if (liveClass.status !== 'completed') {
+            return res.status(400).json({ message: 'Live class has not ended yet' });
+        }
+
+        const batchIds = liveClass.batches.map(b => b._id);
+
+        // Find or auto-create the recording linked to this live class
+        let recording = await RecordedClass.findOne({ liveClass: id });
+
+        if (!recording) {
+            // Create one if it does not yet exist
+            recording = await RecordedClass.create({
+                title: `Recording: ${liveClass.title}`,
+                description: `Session conducted on ${new Date(liveClass.scheduledAt).toLocaleDateString()}`,
+                subject: liveClass.subject,
+                chapter: liveClass.chapter || null,
+                faculty: liveClass.faculty,
+                liveClass: id,
+                contentType: 'liveRecording',
+                status: 'draft',
+                videoUrl: recordingUrl || liveClass.recordingUrl || 'pending'
+            });
+        }
+
+        // If a new recording URL was supplied, update it
+        if (recordingUrl) {
+            recording.videoUrl = recordingUrl;
+            recording.recordingUrl = recordingUrl;
+        }
+        if (notesUrl) {
+            recording.assignmentUrl = notesUrl;
+        }
+
+        // Publish to batches
+        recording.status = 'published';
+        recording.assignedTo = batchIds;
+        recording.publishedAt = new Date();
+        await recording.save();
+
+        // Also update the LiveClass recording URL if provided
+        if (recordingUrl) {
+            liveClass.recordingUrl = recordingUrl;
+            await liveClass.save();
+        }
+
+        await logAction(req, 'Published Live Class Recording', liveClass.title, {
+            targetId: recording._id, targetModel: 'RecordedClass'
+        });
+
+        res.status(200).json({ success: true, data: recording, message: 'Recording published to batches' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error assigning recording', error: error.message });
+    }
+};
+
+// PATCH /api/instructor/live-classes/:id/assign-notes
+// Instructor assigns a notes PDF (presentation slides) to the batches linked to this live class
+exports.assignLiveClassNotes = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { notesUrl } = req.body;
+
+        if (!notesUrl) return res.status(400).json({ message: 'notesUrl is required' });
+
+        const LiveClass = require('../models/LiveClass');
+        const liveClass = await LiveClass.findById(id).populate('batches', '_id name').populate('chapter');
+        if (!liveClass) return res.status(404).json({ message: 'Live class not found' });
+
+        // Update the presentationUrl on the live class itself
+        liveClass.presentationUrl = notesUrl;
+        await liveClass.save();
+
+        // If this live class belongs to a chapter, add it as a liveNote resource there
+        if (liveClass.chapter) {
+            const Chapter = require('../models/Chapter');
+            const chapter = await Chapter.findById(liveClass.chapter._id || liveClass.chapter);
+            if (chapter) {
+                chapter.liveNotes.push({
+                    title: `Notes: ${liveClass.title}`,
+                    url: notesUrl,
+                    uploadedBy: liveClass.faculty,
+                    uploadedAt: new Date(),
+                    status: 'published',
+                    publishedAt: new Date(),
+                    assignedTo: liveClass.batches.map(b => b._id)
+                });
+                await chapter.save();
+            }
+        }
+
+        await logAction(req, 'Published Live Class Notes', liveClass.title, {
+            targetId: id, targetModel: 'LiveClass'
+        });
+
+        res.status(200).json({ success: true, message: 'Notes published to batches' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error assigning notes', error: error.message });
+    }
+};
+
+
+// GET /api/instructor/live-classes/:id/analytics
+exports.getLiveClassAnalytics = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const LiveClass = require('../models/LiveClass');
+
+        const liveClass = await LiveClass.findById(id)
+            .populate('attendance.studentId', 'name email phone profilePhoto studentClass')
+            .populate('batches', 'name')
+            .lean();
+
+        if (!liveClass) return res.status(404).json({ message: 'Live class not found' });
+
+        const fmtSecs = (s) => {
+            if (!s || s <= 0) return '0m 0s';
+            return `${Math.floor(s / 60)}m ${s % 60}s`;
+        };
+
+        const analytics = (liveClass.attendance || []).map(a => {
+            const student = a.studentId || {};
+            const joinTime = a.joinTime ? new Date(a.joinTime) : null;
+            const leaveTime = a.leaveTime ? new Date(a.leaveTime) : null;
+
+            let totalSecs = a.totalDurationSeconds || 0;
+            if (!totalSecs && joinTime && leaveTime) {
+                totalSecs = Math.round((leaveTime - joinTime) / 1000);
+            }
+
+            const camSecs = a.cameraOnDurationSeconds || 0;
+            const micSecs = a.micOnDurationSeconds || 0;
+            const camPct = totalSecs > 0 ? Math.min(100, Math.round((camSecs / totalSecs) * 100)) : 0;
+            const micPct = totalSecs > 0 ? Math.min(100, Math.round((micSecs / totalSecs) * 100)) : 0;
+
+            return {
+                studentId: student._id,
+                name: student.name || 'Unknown',
+                email: student.email,
+                profilePhoto: student.profilePhoto || null,
+                studentClass: student.studentClass || '—',
+                attended: a.attended,
+                joinTime: joinTime ? joinTime.toISOString() : null,
+                leaveTime: leaveTime ? leaveTime.toISOString() : null,
+                totalDurationSeconds: totalSecs,
+                totalDurationFormatted: fmtSecs(totalSecs),
+                cameraOnDurationSeconds: camSecs,
+                cameraOnDurationFormatted: fmtSecs(camSecs),
+                cameraEngagementPercent: camPct,
+                micOnDurationSeconds: micSecs,
+                micOnDurationFormatted: fmtSecs(micSecs),
+                micEngagementPercent: micPct,
+                deviceTimeline: (a.deviceEvents || []).map(ev => ({
+                    type: ev.type,
+                    timestamp: ev.timestamp
+                }))
+            };
+        });
+
+        analytics.sort((a, b) => {
+            if (a.attended !== b.attended) return b.attended - a.attended;
+            return new Date(a.joinTime || 0) - new Date(b.joinTime || 0);
+        });
+
+        const attended = analytics.filter(a => a.attended);
+        const avg = (arr, key) => arr.length > 0 ? Math.round(arr.reduce((s, a) => s + a[key], 0) / arr.length) : 0;
+
+        res.status(200).json({
+            success: true,
+            data: {
+                liveClass: {
+                    _id: liveClass._id,
+                    title: liveClass.title,
+                    subject: liveClass.subject,
+                    scheduledAt: liveClass.scheduledAt,
+                    duration: liveClass.duration,
+                    status: liveClass.status,
+                    batches: liveClass.batches
+                },
+                summary: {
+                    totalEnrolled: analytics.length,
+                    attendedCount: attended.length,
+                    absentCount: analytics.length - attended.length,
+                    attendanceRate: analytics.length > 0 ? Math.round((attended.length / analytics.length) * 100) : 0,
+                    avgDurationSeconds: avg(attended, 'totalDurationSeconds'),
+                    avgDurationFormatted: fmtSecs(avg(attended, 'totalDurationSeconds')),
+                    avgCameraEngagementPercent: avg(attended, 'cameraEngagementPercent'),
+                    avgMicEngagementPercent: avg(attended, 'micEngagementPercent')
+                },
+                students: analytics
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error fetching analytics', error: error.message });
+    }
+};
+
+// GET /api/instructor/badge-counts
+exports.getInstructorBadgeCounts = async (req, res) => {
+    try {
+        const LiveClass = require('../models/LiveClass');
+        const [pendingContent, pendingAssessments, liveNow] = await Promise.all([
+            RecordedClass.countDocuments({ status: 'draft' }),
+            Assignment.countDocuments({ status: 'draft' }),
+            LiveClass.countDocuments({ status: 'ongoing' })
+        ]);
+        res.json({ success: true, data: { pendingContent, pendingAssessments, liveNow } });
+    } catch (e) {
+        res.json({ success: true, data: { pendingContent: 0, pendingAssessments: 0, liveNow: 0 } });
+    }
+};
+

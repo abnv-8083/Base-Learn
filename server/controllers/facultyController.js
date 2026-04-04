@@ -196,7 +196,7 @@ exports.uploadContent = asyncHandler(async (req, res) => {
 
 // GET /api/faculty/live-classes
 exports.getLiveClasses = asyncHandler(async (req, res) => {
-    const classes = await LiveClass.find({ faculty: req.user.userId }).populate('batch', 'name').sort({ scheduledAt: 1 });
+    const classes = await LiveClass.find({ faculty: req.user.userId }).populate('batches', 'name').sort({ scheduledAt: 1 });
     res.status(200).json({ success: true, data: classes });
 });
 
@@ -210,7 +210,7 @@ exports.scheduleLiveClass = asyncHandler(async (req, res) => {
     }
 
     const liveClass = await LiveClass.create({
-        title, batch: batchId, subject, faculty: req.user.userId,
+        title, batches: batchId ? [batchId] : [], subject, faculty: req.user.userId,
         scheduledAt: finalScheduledAt, duration: parseInt(duration) || 60,
         meetingLink: meetingLink || 'pending', status: 'upcoming', type: type || 'lecture', chapter: chapterId || null
     });
@@ -271,8 +271,9 @@ exports.endLiveClass = asyncHandler(async (req, res) => {
             subject: liveClass.subject,
             chapter: liveClass.chapter,
             faculty: req.user.userId,
+            liveClass: liveClass._id,
             contentType: 'liveRecording',
-            status: 'draft', // Draft until instructor approves or faculty updates recording link
+            status: 'draft', 
             videoUrl: 'pending', // Recording link takes time to process
             thumbnail: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80' // Default placeholder
         });

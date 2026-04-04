@@ -11,6 +11,7 @@ const LiveClass = require('../models/LiveClass');
 const RecordedClass = require('../models/RecordedClass');
 const ProfileUpdateRequest = require('../models/ProfileUpdateRequest');
 const Notification = require('../models/Notification');
+const Payment = require('../models/Payment');
 const logAction = require('../utils/logAction');
 const sendEmail = require('../utils/sendEmail');
 const SystemSettings = require('../models/SystemSettings');
@@ -698,3 +699,280 @@ exports.logoutWhatsApp = asyncHandler(async (req, res) => {
     await whatsappService.logoutWhatsApp();
     res.status(200).json({ success: true, message: 'WhatsApp logged out and re-initializing' });
 });
+
+// ═══════════════════════════════════════════════════════
+// GET /api/admin/analytics
+// Full platform analytics: users, attendance, content, engagement
+// ═══════════════════════════════════════════════════════
+exports.getAnalytics = asyncHandler(async (req, res) => {
+    const Assignment = require('../models/Assignment');
+    const Test       = require('../models/Test');
+    const Chapter    = require('../models/Chapter');
+
+    // ── 1. User overview ─────────────────────────────────
+    const [totalStudents, totalFaculty, totalInstructors,
+           activeStudents, paidStudents,
+           newStudentsThisMonth, newStudentsLastMonth] = await Promise.all([
+        Student.countDocuments(),
+        Faculty.countDocuments(),
+        Instructor.countDocuments(),
+        Student.countDocuments({ isActive: true }),
+        Student.countDocuments({ hasPaid: true }),
+        Student.countDocuments({ createdAt: { $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } }),
+        Student.countDocuments({ createdAt: {
+            $gte: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1),
+            $lt:  new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+        }})
+    ]);
+
+    // ── 2. Content overview ───────────────────────────────
+    const [totalLiveClasses, completedLiveClasses, totalRecorded,
+           publishedRecorded, totalBatches, totalSubjects, totalChapters] = await Promise.all([
+        LiveClass.countDocuments(),
+        LiveClass.countDocuments({ status: 'completed' }),
+        RecordedClass.countDocuments(),
+        RecordedClass.countDocuments({ status: 'published' }),
+        Batch.countDocuments(),
+        Subject.countDocuments(),
+        Chapter.countDocuments()
+    ]);
+
+    // ── 3. Live-class attendance aggregation ─────────────
+    const liveClassesWithAttendance = await LiveClass.find({ status: 'completed' })
+        .populate('faculty', 'name')
+        .populate('batches', 'name')
+        .lean();
+
+    let totalAttendanceRecords = 0;
+    let totalAttended          = 0;
+    let totalCameraSeconds     = 0;
+    let totalMicSeconds        = 0;
+    let totalDurationSeconds   = 0;
+
+    const sessionAnalytics = liveClassesWithAttendance.map(cls => {
+        const records  = cls.attendance || [];
+        const attended = records.filter(a => a.attended);
+        totalAttendanceRecords += records.length;
+        totalAttended          += attended.length;
+        totalCameraSeconds     += attended.reduce((s, a) => s + (a.cameraOnDurationSeconds || 0), 0);
+        totalMicSeconds        += attended.reduce((s, a) => s + (a.micOnDurationSeconds    || 0), 0);
+        totalDurationSeconds   += attended.reduce((s, a) => s + (a.totalDurationSeconds    || 0), 0);
+        return {
+            _id:           cls._id,
+            title:         cls.title,
+            subject:       cls.subject,
+            scheduledAt:   cls.scheduledAt,
+            faculty:       cls.faculty?.name || '—',
+            batches:       cls.batches?.map(b => b.name).join(', ') || '—',
+            enrolled:      records.length,
+            attended:      attended.length,
+            attendanceRate: records.length > 0 ? Math.round((attended.length / records.length) * 100) : 0,
+            avgCamera:     attended.length > 0 ? Math.round(attended.reduce((s, a) => s + (a.cameraEngagementPercent || 0), 0) / attended.length) : 0,
+            avgMic:        attended.length > 0 ? Math.round(attended.reduce((s, a) => s + (a.micEngagementPercent    || 0), 0) / attended.length) : 0,
+        };
+    }).sort((a, b) => new Date(b.scheduledAt) - new Date(a.scheduledAt));
+
+    const overallAttendanceRate = totalAttendanceRecords > 0 ? Math.round((totalAttended / totalAttendanceRecords) * 100) : 0;
+    const avgCameraEngagement   = totalAttended > 0 ? Math.round((totalCameraSeconds / totalDurationSeconds) * 100) : 0;
+    const avgMicEngagement      = totalAttended > 0 ? Math.round((totalMicSeconds    / totalDurationSeconds) * 100) : 0;
+
+    // ── 4. Per-student attendance summary ────────────────
+    const allStudents = await Student.find({}).select('name email profilePhoto studentClass hasPaid isActive createdAt').lean();
+    const allBatches  = await Batch.find({}).populate('studyClass', 'name').lean();
+
+    const studentBatchMap = {};
+    allBatches.forEach(b => {
+        (b.students || []).forEach(sid => {
+            studentBatchMap[sid.toString()] = { batchName: b.name, className: b.studyClass?.name || '—' };
+        });
+    });
+
+    const completedClsIds = liveClassesWithAttendance.map(c => c._id.toString());
+
+    const studentSummaries = allStudents.map(s => {
+        const sid = s._id.toString();
+        let attended = 0, totalSessions = 0,
+            camSecs = 0, micSecs = 0, durSecs = 0;
+
+        liveClassesWithAttendance.forEach(cls => {
+            const record = (cls.attendance || []).find(a => a.studentId?.toString() === sid);
+            if (record) {
+                totalSessions++;
+                if (record.attended) {
+                    attended++;
+                    camSecs += record.cameraOnDurationSeconds || 0;
+                    micSecs += record.micOnDurationSeconds    || 0;
+                    durSecs += record.totalDurationSeconds    || 0;
+                }
+            }
+        });
+
+        return {
+            _id:           s._id,
+            name:          s.name,
+            email:         s.email,
+            profilePhoto:  s.profilePhoto,
+            studentClass:  s.studentClass || '—',
+            hasPaid:       s.hasPaid,
+            isActive:      s.isActive,
+            joinedAt:      s.createdAt,
+            batch:         studentBatchMap[sid]?.batchName || '—',
+            class:         studentBatchMap[sid]?.className || '—',
+            totalSessions,
+            attended,
+            attendanceRate:  totalSessions > 0 ? Math.round((attended / totalSessions) * 100) : 0,
+            totalDurationFormatted: durSecs > 0 ? `${Math.floor(durSecs / 3600)}h ${Math.floor((durSecs % 3600) / 60)}m` : '—',
+            avgCameraPercent: durSecs > 0 ? Math.min(100, Math.round((camSecs / durSecs) * 100)) : 0,
+            avgMicPercent:    durSecs > 0 ? Math.min(100, Math.round((micSecs / durSecs) * 100)) : 0,
+        };
+    });
+
+    // ── 5. Monthly enrolment trend (last 6 months) ────────
+    const enrollmentTrend = await Promise.all(
+        Array.from({ length: 6 }, (_, i) => {
+            const d = new Date();
+            d.setMonth(d.getMonth() - (5 - i));
+            const start = new Date(d.getFullYear(), d.getMonth(), 1);
+            const end   = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+            return Student.countDocuments({ createdAt: { $gte: start, $lt: end } }).then(count => ({
+                month: start.toLocaleDateString('en', { month: 'short', year: '2-digit' }),
+                students: count
+            }));
+        })
+    );
+
+    // ── 6. Assessment completion stats ────────────────────
+    const [totalAssignments, totalTests] = await Promise.all([
+        Assignment.countDocuments({ status: 'published' }),
+        Test.countDocuments({ status: 'published' })
+    ]);
+    const assignmentsWithSubs = await Assignment.find({ status: 'published', 'submissions.0': { $exists: true } }).select('submissions').lean();
+    const testsWithSubs       = await Test.find({ status: 'published', 'submissions.0': { $exists: true } }).select('submissions').lean();
+    const totalSubmissions = assignmentsWithSubs.reduce((s, a) => s + a.submissions.length, 0)
+                           + testsWithSubs.reduce((s, t) => s + t.submissions.length, 0);
+
+    res.status(200).json({
+        success: true,
+        data: {
+            overview: {
+                totalStudents, totalFaculty, totalInstructors,
+                activeStudents, paidStudents,
+                newStudentsThisMonth, newStudentsLastMonth,
+                growthPct: newStudentsLastMonth > 0
+                    ? Math.round(((newStudentsThisMonth - newStudentsLastMonth) / newStudentsLastMonth) * 100)
+                    : null
+            },
+            content: {
+                totalLiveClasses, completedLiveClasses, totalRecorded,
+                publishedRecorded, totalBatches, totalSubjects, totalChapters,
+                totalAssignments, totalTests, totalSubmissions
+            },
+            attendance: {
+                overallAttendanceRate,
+                avgCameraEngagement,
+                avgMicEngagement,
+                totalSessionsTracked: completedLiveClasses
+            },
+            enrollmentTrend,
+            sessions:   sessionAnalytics,
+            students:   studentSummaries
+        }
+    });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// PAYMENT MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+
+exports.getPayments = async (req, res) => {
+    try {
+        const { studentId, status, category, method } = req.query;
+        const filter = {};
+        if (studentId) filter.student = studentId;
+        if (status)    filter.status   = status;
+        if (category)  filter.category = category;
+        if (method)    filter.method   = method;
+        const payments = await Payment.find(filter)
+            .populate('student', 'name email phone studentClass profilePhoto')
+            .populate('recordedBy', 'name').sort({ paidAt: -1 });
+        const total        = payments.reduce((s, p) => s + (p.amount || 0), 0);
+        const paidTotal    = payments.filter(p => p.status === 'paid').reduce((s, p) => s + p.amount, 0);
+        const pendingTotal = payments.filter(p => p.status === 'pending').reduce((s, p) => s + p.amount, 0);
+        res.status(200).json({ success: true, data: payments, summary: { total, paidTotal, pendingTotal, count: payments.length } });
+    } catch (e) { res.status(500).json({ message: e.message }); }
+};
+
+exports.createPayment = async (req, res) => {
+    try {
+        const { student, amount, method, status, category, remarks, transactionId, paidAt, dueDate } = req.body;
+        if (!student || !amount) return res.status(400).json({ message: 'Student and amount are required' });
+        const payment = await Payment.create({
+            student, amount: Number(amount), method: method || 'cash',
+            status: status || 'paid', category: category || 'tuition',
+            remarks, transactionId, paidAt: paidAt || new Date(), dueDate,
+            recordedBy: req.user._id
+        });
+        if (status === 'paid') await Student.findByIdAndUpdate(student, { hasPaid: true });
+        await logAction(req, 'Recorded Payment', 'Amount: Rs ' + amount, { targetId: payment._id, targetModel: 'Payment' });
+        const populated = await Payment.findById(payment._id)
+            .populate('student', 'name email phone studentClass profilePhoto')
+            .populate('recordedBy', 'name');
+        res.status(201).json({ success: true, data: populated });
+    } catch (e) { res.status(500).json({ message: e.message }); }
+};
+
+exports.updatePayment = async (req, res) => {
+    try {
+        const payment = await Payment.findByIdAndUpdate(req.params.id, req.body, { new: true })
+            .populate('student', 'name email phone studentClass profilePhoto')
+            .populate('recordedBy', 'name');
+        if (!payment) return res.status(404).json({ message: 'Payment not found' });
+        if (req.body.status === 'paid') {
+            await Student.findByIdAndUpdate(payment.student._id, { hasPaid: true });
+        } else if (['refunded','pending'].includes(req.body.status)) {
+            const other = await Payment.countDocuments({ student: payment.student._id, status: 'paid', _id: { $ne: payment._id } });
+            if (other === 0) await Student.findByIdAndUpdate(payment.student._id, { hasPaid: false });
+        }
+        await logAction(req, 'Updated Payment', 'Receipt: ' + payment.receiptNo);
+        res.status(200).json({ success: true, data: payment });
+    } catch (e) { res.status(500).json({ message: e.message }); }
+};
+
+exports.deletePayment = async (req, res) => {
+    try {
+        const payment = await Payment.findById(req.params.id);
+        if (!payment) return res.status(404).json({ message: 'Payment not found' });
+        await logAction(req, 'Deleted Payment', 'Receipt: ' + payment.receiptNo);
+        await Payment.findByIdAndDelete(req.params.id);
+        res.status(200).json({ success: true, message: 'Payment deleted' });
+    } catch (e) { res.status(500).json({ message: e.message }); }
+};
+
+exports.getStudentPayments = async (req, res) => {
+    try {
+        const payments = await Payment.find({ student: req.params.studentId })
+            .populate('recordedBy', 'name').sort({ paidAt: -1 });
+        const student = await Student.findById(req.params.studentId)
+            .select('name email phone studentClass profilePhoto hasPaid').lean();
+        if (!student) return res.status(404).json({ message: 'Student not found' });
+        const totalPaid    = payments.filter(p => p.status === 'paid').reduce((s, p) => s + p.amount, 0);
+        const totalDue     = payments.filter(p => p.status === 'pending').reduce((s, p) => s + p.amount, 0);
+        const totalPartial = payments.filter(p => p.status === 'partial').reduce((s, p) => s + p.amount, 0);
+        res.status(200).json({ success: true, data: { student, payments, summary: { totalPaid, totalDue, totalPartial } } });
+    } catch (e) { res.status(500).json({ message: e.message }); }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// BADGE COUNTS
+// ═══════════════════════════════════════════════════════════════
+
+exports.getAdminBadgeCounts = async (req, res) => {
+    try {
+        const [pendingRequests, newEnquiries, unpaidStudents] = await Promise.all([
+            ProfileUpdateRequest.countDocuments({ status: 'pending' }),
+            AdmissionEnquiry.countDocuments({ status: 'new' }),
+            Student.countDocuments({ hasPaid: false, isActive: true })
+        ]);
+        res.status(200).json({ success: true, data: { pendingRequests, newEnquiries, unpaidStudents } });
+    } catch (e) { res.status(500).json({ message: e.message }); }
+};
