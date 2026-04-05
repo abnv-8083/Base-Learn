@@ -5,7 +5,7 @@ services:
     env: node
     region: singapore # Change to 'frankfurt', 'ohio', or 'oregon' based on your location
     rootDir: server
-    buildCommand: npm install && npx puppeteer browsers install chrome
+    buildCommand: npm install
     startCommand: npm start
     autoDeploy: true # Automatically deploys when you push to GitHub
     
@@ -15,8 +15,6 @@ services:
         value: production
       - key: PORT
         value: 5000
-      - key: PUPPETEER_CACHE_DIR
-        value: /opt/render/project/src/server/.cache/puppeteer
         
       # The following must be manually added as secrets in the Render Dashboard once deployed:
       - key: MONGO_URI
